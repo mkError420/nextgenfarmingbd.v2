@@ -5,46 +5,63 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
-import { 
-  Star, 
-  Minus, 
-  Plus, 
-  ShoppingCart, 
-  Zap, 
-  ShieldCheck, 
-  Truck, 
-  ArrowLeft, 
-  Heart, 
+import {
+  Star,
+  Minus,
+  Plus,
+  ShoppingCart,
+  Zap,
+  ShieldCheck,
+  Truck,
+  ArrowLeft,
+  Heart,
   Share2,
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
-import { products } from '@/lib/data';
 import { useCart } from '@/lib/CartContext';
 import { toast } from 'react-hot-toast';
 
 const relatedProducts = [
-  { id: '101', name: 'কালোজিরা মধু', price: 950, image: 'https://picsum.photos/seed/honey2/400/400' },
-  { id: '102', name: 'খাঁটি সরিষার তেল', price: 280, image: 'https://picsum.photos/seed/oil2/400/400' },
-  { id: '103', name: 'লিচু ফুলের মধু', price: 850, image: 'https://picsum.photos/seed/honey3/400/400' },
-  { id: '104', name: 'অর্গানিক বাদাম মিক্স', price: 550, image: 'https://picsum.photos/seed/nuts2/400/400' },
+  { _id: '101', name: 'কালোজিরা মধু', price: 950, image: 'https://picsum.photos/seed/honey2/400/400' },
+  { _id: '102', name: 'খাঁটি সরিষার তেল', price: 280, image: 'https://picsum.photos/seed/oil2/400/400' },
+  { _id: '103', name: 'লিচু ফুলের মধু', price: 850, image: 'https://picsum.photos/seed/honey3/400/400' },
+  { _id: '104', name: 'অর্গানিক বাদাম মিক্স', price: 550, image: 'https://picsum.photos/seed/nuts2/400/400' },
 ];
 
 export default function SingleProductPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
-  const baseProduct = products.find(p => p.id === id);
+  const [baseProduct, setBaseProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProduct();
+  }, [id]);
+
+  const fetchProduct = async () => {
+    try {
+      const res = await fetch(`/api/products?id=${id}`);
+      const data = await res.json();
+      setBaseProduct(data.product || data);
+    } catch (error) {
+      console.error('Error fetching product:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Derive full product details from base product data
   const product = useMemo(() => {
     if (!baseProduct) return null;
     return {
       ...baseProduct,
-      status: 'In Stock',
-      description: `${baseProduct.name} - এটি আমাদের একটি প্রিমিয়াম গুণমানের পণ্য। সরাসরি মাঠ থেকে সংগৃহীত এবং স্বাস্থ্যসম্মত উপায়ে প্রস্তুতকৃত।`,
+      id: baseProduct._id || baseProduct.id,
+      status: baseProduct.inStock ? 'In Stock' : 'Out of Stock',
+      description: baseProduct.description || `${baseProduct.name} - এটি আমাদের একটি প্রিমিয়াম গুণমানের পণ্য। সরাসরি মাঠ থেকে সংগৃহীত এবং স্বাস্থ্যসম্মত উপায়ে প্রস্তুতকৃত।`,
       features: [
         '১০০% খাঁটি ও গুণগত মান সম্পন্ন',
         'কোনো ভেজাল বা প্রিজারভেটিভ নেই',
@@ -54,17 +71,17 @@ export default function SingleProductPage() {
       variants: [baseProduct.weight || 'Regular', '৫০০ গ্রাম', '১ কেজি'],
       images: [
         baseProduct.image,
-        `https://picsum.photos/seed/${baseProduct.id}-2/800/800`,
-        `https://picsum.photos/seed/${baseProduct.id}-3/800/800`
+        `https://picsum.photos/seed/${baseProduct._id || baseProduct.id}-2/800/800`,
+        `https://picsum.photos/seed/${baseProduct._id || baseProduct.id}-3/800/800`
       ],
-      details: `${baseProduct.name} - এর অসাধারণ গুণাগুণ এবং স্বাদ আপনাকে মুগ্ধ করবে। আমরা সরাসরি বিশ্বস্ত উৎস থেকে এই পণ্যটি সংগ্রহ করি এবং অত্যন্ত নিবিড়ভাবে এর মান নিয়ন্ত্রণ করি। আপনার পরিবারের সুস্থতায় আমরা সবসময় আপোষহীন।`,
+      details: baseProduct.description_en || `${baseProduct.name} - এর অসাধারণ গুণাগুণ এবং স্বাদ আপনাকে মুগ্ধ করবে। আমরা সরাসরি বিশ্বস্ত উৎস থেকে এই পণ্যটি সংগ্রহ করি এবং অত্যন্ত নিবিড়ভাবে এর মান নিয়ন্ত্রণ করি। আপনার পরিবারের সুস্থতায় আমরা সবসময় আপোষহীন।`,
       deliveryInfo: 'ঢাকার ভেতরে অথবা ১০০০০ টাকার উপরে কেনাকাটায় ফ্রি ডেলিভারি! ঢাকার ভেতরে ২৪-৪৮ ঘণ্টা এবং ঢাকার বাইরে ৩-৫ কার্যদিবসের মধ্যে কুরিয়ারের মাধ্যমে আমরা পণ্য প্রতিটি জেলায় পৌঁছে দিয়ে থাকি।'
     };
   }, [baseProduct]);
 
-  const [mainImage, setMainImage] = useState(product?.images[0] || '');
+  const [mainImage, setMainImage] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [selectedVariant, setSelectedVariant] = useState(product?.variants[0] || '');
+  const [selectedVariant, setSelectedVariant] = useState('');
   const [activeTab, setActiveTab] = useState('description');
   const [showSuccess, setShowSuccess] = useState(false);
   const [zoomOrigin, setZoomOrigin] = useState('center');
@@ -72,6 +89,28 @@ export default function SingleProductPage() {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const { addToCart, setIsDrawerOpen } = useCart();
+
+  useEffect(() => {
+    if (product) {
+      setMainImage(product.images[0] || '');
+      setSelectedVariant(product.variants[0] || '');
+    }
+  }, [product]);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-brand-bg">
+        <Header />
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-brand-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-slate-500 font-bold italic">Loading product...</p>
+          </div>
+        </div>
+        <Footer />
+      </main>
+    );
+  }
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
@@ -394,7 +433,7 @@ export default function SingleProductPage() {
 
            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
               {relatedProducts.map((p) => (
-                <Link key={p.id} href={`/shop/${p.id}`} className="group space-y-4">
+                <Link key={p._id} href={`/shop/${p._id}`} className="group space-y-4">
                   <div className="relative aspect-square rounded-[2.5rem] overflow-hidden border border-slate-50 shadow-sm group-hover:shadow-xl transition-all">
                     <Image src={p.image} alt={p.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
                   </div>

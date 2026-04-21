@@ -6,7 +6,8 @@ import { motion } from 'motion/react';
 
 interface ProductCardProps {
   product: {
-    id: string;
+    _id?: string;
+    id?: string;
     name: string;
     price: number;
     oldPrice?: number;
@@ -30,7 +31,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
     addToCart({
-      id: product.id,
+      id: product._id || product.id || '',
       name: product.name,
       price: product.price,
       quantity: 1,
@@ -57,7 +58,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       whileHover={{ y: -5 }}
       className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-emerald-50 group p-4"
     >
-      <Link href={`/shop/${product.id}`}>
+      <Link href={`/shop/${product._id || product.id}`}>
         <div className="relative aspect-square overflow-hidden bg-[#f9faf5] rounded-2xl border border-slate-100 flex items-center justify-center cursor-pointer">
           <Image 
             src={product.image} 
@@ -75,7 +76,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       </Link>
       
       <div className="pt-4 space-y-2">
-        <Link href={`/shop/${product.id}`}>
+        <Link href={`/shop/${product._id || product.id}`}>
           <h3 className="font-bold text-slate-800 group-hover:text-brand-green transition-colors line-clamp-2 h-10 text-sm cursor-pointer">
             {product.name}
           </h3>

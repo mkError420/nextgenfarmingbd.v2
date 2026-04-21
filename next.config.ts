@@ -35,6 +35,18 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'fabrilife.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'magpiely.com.bd',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
   output: 'standalone',

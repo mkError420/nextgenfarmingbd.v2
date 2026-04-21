@@ -9,27 +9,24 @@ export async function GET(request: NextRequest) {
     await mongoose.connect(MONGODB_URI);
     
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
-    
-    let query: any = {};
-    if (status) {
-      query.status = status;
-    }
-    
-    const blogs = await Blog.find(query)
+
+    const blogs = await Blog.find()
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip(offset);
-    
-    const total = await Blog.countDocuments(query);
-    
+
+    const total = await Blog.countDocuments();
+
     return NextResponse.json({ 
       blogs,
-      total,
-      limit,
-      offset
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: offset + limit < total
+      }
     });
   } catch (error) {
     console.error('Error fetching blogs:', error);
@@ -43,28 +40,12 @@ export async function POST(request: NextRequest) {
     
     const blogData = await request.json();
     
-    // Validate required fields
-    const requiredFields = ['title', 'slug', 'content', 'author'];
-    for (const field of requiredFields) {
-      if (!blogData[field]) {
-        return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
-      }
-    }
-    
-    // If status is published, set publishedAt
-    if (blogData.status === 'published' && !blogData.publishedAt) {
-      blogData.publishedAt = new Date();
-    }
-    
     const blog = new Blog(blogData);
     await blog.save();
     
     return NextResponse.json(blog, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating blog:', error);
-    if (error.code === 11000) {
-      return NextResponse.json({ error: 'Slug already exists' }, { status: 400 });
-    }
     return NextResponse.json({ error: 'Failed to create blog' }, { status: 500 });
   }
 }

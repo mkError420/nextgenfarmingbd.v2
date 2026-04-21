@@ -23,21 +23,27 @@ export default function AdminDashboard() {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const [productsRes, categoriesRes, ordersRes, blogsRes, dealsRes, bannersRes] = await Promise.all([
-        fetch('/api/products?limit=1'),
-        fetch('/api/categories'),
-        fetch('/api/orders?limit=1'),
-        fetch('/api/blogs?limit=1'),
-        fetch('/api/deals?limit=1'),
-        fetch('/api/banners?limit=1')
-      ]);
+      
+      // Fetch each API independently to handle failures gracefully
+      const fetchWithFallback = async (url: string, fallback: any) => {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) return fallback;
+          return await res.json();
+        } catch (error) {
+          console.error(`Error fetching ${url}:`, error);
+          return fallback;
+        }
+      };
 
-      const productsData = await productsRes.json();
-      const categoriesData = await categoriesRes.json();
-      const ordersData = await ordersRes.json();
-      const blogsData = await blogsRes.json();
-      const dealsData = await dealsRes.json();
-      const bannersData = await bannersRes.json();
+      const [productsData, categoriesData, ordersData, blogsData, dealsData, bannersData] = await Promise.all([
+        fetchWithFallback('/api/products?limit=1', { pagination: { total: 0 } }),
+        fetchWithFallback('/api/categories', { categories: [] }),
+        fetchWithFallback('/api/orders?limit=1', { pagination: { total: 0 } }),
+        fetchWithFallback('/api/blogs?limit=1', { total: 0 }),
+        fetchWithFallback('/api/deals?limit=1', { total: 0 }),
+        fetchWithFallback('/api/banners?limit=1', { total: 0 })
+      ]);
 
       console.log('Dashboard stats:', {
         products: productsData,
@@ -49,12 +55,12 @@ export default function AdminDashboard() {
       });
 
       setStats({
-        products: productsData.pagination?.total || 0,
+        products: productsData.pagination?.total || productsData.total || 0,
         categories: categoriesData.categories?.length || 0,
-        orders: ordersData.pagination?.total || 0,
-        blogs: blogsData.total || 0,
-        deals: dealsData.total || 0,
-        banners: bannersData.total || 0
+        orders: ordersData.pagination?.total || ordersData.total || 0,
+        blogs: blogsData.pagination?.total || blogsData.total || 0,
+        deals: dealsData.pagination?.total || dealsData.total || 0,
+        banners: bannersData.pagination?.total || bannersData.total || 0
       });
     } catch (error) {
       console.error('Error fetching stats:', error);

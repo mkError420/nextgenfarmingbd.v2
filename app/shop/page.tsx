@@ -4,7 +4,6 @@ import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import { products } from '@/lib/data';
 import { Filter, SlidersHorizontal, ChevronDown, LayoutGrid, List, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSearchParams } from 'next/navigation';
@@ -21,9 +20,12 @@ function ShopContent() {
   const [searchQuery, setSearchQuery] = useState(searchParam);
   const [categories, setCategories] = useState<any[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [products, setProducts] = useState<any[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
 
   useEffect(() => {
     fetchCategories();
+    fetchProducts();
   }, []);
 
   const fetchCategories = async () => {
@@ -35,6 +37,18 @@ function ShopContent() {
       console.error('Error fetching categories:', error);
     } finally {
       setCategoriesLoading(false);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('/api/products');
+      const data = await res.json();
+      setProducts(data.products || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setProductsLoading(false);
     }
   };
 
@@ -50,37 +64,52 @@ function ShopContent() {
 
     // Category Filter
     if (selectedCategory !== 'All') {
-      result = result.filter(p => p.category === selectedCategory);
+      result = result.filter((p: any) => p.category === selectedCategory);
     }
 
     // Search Filter
     if (searchQuery) {
-      result = result.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        p.name_en.toLowerCase().includes(searchQuery.toLowerCase())
+      result = result.filter((p: any) =>
+        p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.name_en?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     // Price Filter
-    result = result.filter(p => p.price <= maxPrice);
+    result = result.filter((p: any) => p.price <= maxPrice);
 
     // Sorting
     switch (sortBy) {
       case 'price-low':
-        result.sort((a, b) => a.price - b.price);
+        result.sort((a: any, b: any) => a.price - b.price);
         break;
       case 'price-high':
-        result.sort((a, b) => b.price - a.price);
+        result.sort((a: any, b: any) => b.price - a.price);
         break;
       case 'rating':
-        result.sort((a, b) => b.rating - a.rating);
+        result.sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0));
         break;
       default:
         break;
     }
 
     return result;
-  }, [selectedCategory, sortBy, maxPrice, searchQuery]);
+  }, [selectedCategory, sortBy, maxPrice, searchQuery, products]);
+
+  if (productsLoading || categoriesLoading) {
+    return (
+      <main className="min-h-screen bg-brand-bg pb-20">
+        <Header />
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-brand-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-slate-500 font-bold italic">Loading products...</p>
+          </div>
+        </div>
+        <Footer />
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-brand-bg pb-20">
@@ -156,7 +185,7 @@ function ShopContent() {
                   ক্যাটাগরি
                 </h3>
                 <div className="space-y-2 max-h-[350px] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-emerald-200 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-emerald-300">
-                  <button 
+                  <button
                     onClick={() => setSelectedCategory('All')}
                     className={`w-full text-left px-5 py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-between group ${selectedCategory === 'All' ? 'bg-brand-green text-white shadow-xl shadow-brand-green/20 scale-[1.02]' : 'bg-white text-slate-500 hover:bg-emerald-50 border border-emerald-50 hover:border-emerald-100 hover:text-brand-green-dark'}`}
                   >
@@ -164,9 +193,9 @@ function ShopContent() {
                     <span className={`text-[10px] px-2 py-0.5 rounded-full ${selectedCategory === 'All' ? 'bg-white/20' : 'bg-emerald-50 group-hover:bg-brand-green group-hover:text-white'}`}>{products.length}</span>
                   </button>
                   
-                  {categories.map((cat) => (
-                    <div key={cat.id} className="space-y-1">
-                      <button 
+                  {categories.map((cat: any) => (
+                    <div key={cat._id} className="space-y-1">
+                      <button
                         onClick={() => setSelectedCategory(cat.name_en)}
                         className={`w-full text-left px-5 py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-between group ${selectedCategory === cat.name_en ? 'bg-brand-green text-white shadow-xl shadow-brand-green/20 scale-[1.02]' : 'bg-white text-slate-500 hover:bg-emerald-50 border border-emerald-50 hover:border-emerald-100 hover:text-brand-green-dark'}`}
                       >
@@ -175,7 +204,7 @@ function ShopContent() {
                            <span>{cat.name}</span>
                          </div>
                          <span className={`text-[10px] px-2 py-0.5 rounded-full ${selectedCategory === cat.name_en ? 'bg-white/20' : 'bg-emerald-50 group-hover:bg-brand-green group-hover:text-white'}`}>
-                           {products.filter(p => p.category === cat.name_en).length}
+                           {products.filter((p: any) => p.category === cat.name_en).length}
                          </span>
                       </button>
                       
@@ -289,7 +318,7 @@ function ShopContent() {
                 {filteredAndSortedProducts.map((product) => (
                   <motion.div
                     layout
-                    key={product.id}
+                    key={product._id}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}

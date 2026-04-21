@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Hero from '@/components/Hero';
 import CategoryBar from '@/components/CategoryBar';
@@ -7,12 +8,41 @@ import BannerCarousel from '@/components/BannerCarousel';
 import Image from 'next/image';
 import ProductCard from '@/components/ProductCard';
 import Footer from '@/components/Footer';
-import { products, categories } from '@/lib/data';
 import { Truck, ShieldCheck, RefreshCw, Headphones, Flame, Star, Send, PhoneCall, ArrowRight, Quote, Zap, Sparkles, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'motion/react';
 
 export default function Home() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('/api/products');
+      const data = await res.json();
+      setProducts(data.products || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/categories');
+      const data = await res.json();
+      setCategories(data.categories || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
   const offerMessages = [
     "প্রথম অর্ডারে ১০% ডিসকাউন্ট! কোড: NEXTGEN10",
     "সারা বাংলাদেশে ফ্রি ডেলিভারি (মিনিমাম ১৫০০/- অর্ডার)",
@@ -52,13 +82,13 @@ export default function Home() {
 
       {/* Product Ticker */}
       <div className="bg-white py-4 border-b border-emerald-50 overflow-hidden select-none">
-        <motion.div 
+        <motion.div
           animate={{ x: ["-50%", "0%"] }}
           transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
           className="flex whitespace-nowrap gap-8 items-center"
         >
-          {[...products, ...products].map((product, i) => (
-            <Link key={i} href={`/shop/${product.id}`} className="flex items-center gap-3 px-6 py-2 bg-[#f9faf5] rounded-full border border-emerald-100/50 cursor-pointer hover:border-brand-green transition-colors">
+          {[...products, ...products].map((product: any, i: number) => (
+            <Link key={i} href={`/shop/${product._id}`} className="flex items-center gap-3 px-6 py-2 bg-[#f9faf5] rounded-full border border-emerald-100/50 cursor-pointer hover:border-brand-green transition-colors">
               <ShoppingBag size={14} className="text-brand-green" />
               <span className="text-xs font-bold text-slate-700">{product.name}</span>
               <span className="text-brand-green font-black text-xs">৳{product.price}</span>
@@ -106,8 +136,8 @@ export default function Home() {
             </div>
 
             <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {products.slice(0, 4).map((product) => (
-                <div key={product.id} className="relative group">
+              {products.slice(0, 4).map((product: any) => (
+                <div key={product._id} className="relative group">
                   <ProductCard product={product} />
                   <div className="absolute top-4 right-4 bg-brand-red text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg z-10 animate-bounce">
                     HOT
@@ -180,8 +210,8 @@ export default function Home() {
             {/* Left Content (Products) */}
             <div className="lg:col-span-9 space-y-16">
               {/* Top 4 Categories Sections */}
-              {categories.slice(0, 4).map((cat) => (
-                <div key={cat.id} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              {categories.slice(0, 4).map((cat: any) => (
+                <div key={cat._id} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                   <div className="flex justify-between items-end border-b border-emerald-50 pb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-brand-green shadow-sm shadow-emerald-100 border border-emerald-50">
@@ -194,19 +224,19 @@ export default function Home() {
                     </div>
                     <Link href={`/shop?category=${encodeURIComponent(cat.name_en)}`} className="text-brand-green font-black text-xs italic hover:underline flex items-center gap-1 group">
                       সব দেখুন
-                      <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" /> 
                     </Link>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
                     {products
-                      .filter(p => p.category === cat.name_en)
+                      .filter((p: any) => p.category === cat.name_en)
                       .slice(0, 3)
-                      .map((product) => (
-                        <ProductCard key={product.id} product={product} />
+                      .map((product: any) => (
+                        <ProductCard key={product._id} product={product} />
                       ))
                     }
-                    {products.filter(p => p.category === cat.name_en).length === 0 && (
+                    {products.filter((p: any) => p.category === cat.name_en).length === 0 && (
                       <div className="col-span-full py-12 text-center bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
                         <p className="text-slate-400 italic text-sm">এই ক্যাটাগরিতে বর্তমানে কোনো পণ্য নেই।</p>
                       </div>

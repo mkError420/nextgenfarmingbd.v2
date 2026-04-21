@@ -35,11 +35,11 @@ export default function CategoryBar() {
             <span className="w-2 h-7 bg-brand-green rounded-full shadow-sm shadow-brand-green/20" />
             জনপ্রিয় ক্যাটাগরি
           </h2>
-          <span className="text-sm text-brand-green font-bold cursor-pointer hover:underline">সবগুলো দেখুন →</span>
+          <Link href="/categories" className="text-sm text-brand-green font-bold cursor-pointer hover:underline">সবগুলো দেখুন →</Link>
         </div>
 
         <div className="flex overflow-x-auto pb-4 gap-4 no-scrollbar -mx-4 px-4 md:grid md:grid-cols-5 lg:grid-cols-10 md:overflow-visible">
-          {categories.map((cat: any) => (
+          {categories.slice(0, 10).map((cat: any) => (
             <Link
               key={cat._id}
               href={`/shop?category=${encodeURIComponent(cat.name_en)}`}

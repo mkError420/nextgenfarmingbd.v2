@@ -1,17 +1,50 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import { products } from '@/lib/data';
 import { motion } from 'motion/react';
 import { Flame, Star, Zap, Sparkles, Percent, Gift, Clock, Truck } from 'lucide-react';
 import Link from 'next/link';
 
 export default function OffersPage() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('/api/products');
+      const data = await res.json();
+      setProducts(data.products || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filter products that have a discount
-  const discountedProducts = products.filter(p => p.oldPrice && p.oldPrice > p.price);
+  const discountedProducts = products.filter((p: any) => p.oldPrice && p.oldPrice > p.price);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-brand-bg">
+        <Header />
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-brand-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-slate-500 font-bold italic">Loading offers...</p>
+          </div>
+        </div>
+        <Footer />
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-brand-bg pb-0">
@@ -107,8 +140,8 @@ export default function OffersPage() {
            </div>
 
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {discountedProducts.map((product) => (
-                <div key={product.id} className="relative group">
+              {discountedProducts.map((product: any) => (
+                <div key={product._id} className="relative group">
                    <ProductCard product={product} />
                    <div className="absolute top-4 right-4 bg-brand-red text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg z-10 animate-bounce">
                       {Math.round(((product.oldPrice! - product.price) / product.oldPrice!) * 100)}% OFF

@@ -10,38 +10,117 @@ export default function EditProduct() {
   const params = useParams();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     name_en: '',
     price: '',
     oldPrice: '',
     category: '',
+    subcategory: '',
     image: '',
     description: '',
     description_en: '',
     inStock: true,
   });
+  const [imagePreview, setImagePreview] = useState<string>('');
 
   useEffect(() => {
     fetchProduct();
+    fetchCategories();
   }, [params.id]);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/categories');
+      const data = await res.json();
+      setCategories(data.categories || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
+
+  const selectedCategory = categories.find((cat: any) => cat.name_en === formData.category);
+
+  const handleImageUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to upload image');
+      }
+
+      const data = await res.json();
+      setFormData((prev) => ({ ...prev, image: data.url }));
+      setImagePreview(data.url);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('Only JPG, JPEG, PNG, and WebP files are allowed.');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert('File size must be less than 5MB.');
+        return;
+      }
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Auto-upload the image
+      handleImageUpload(file);
+    }
+  };
 
   const fetchProduct = async () => {
     try {
       const res = await fetch(`/api/products?id=${params.id}`);
       const data = await res.json();
-      if (data.product) {
+      const product = data.product || data;
+      if (product) {
         setFormData({
-          name: data.product.name || '',
-          name_en: data.product.name_en || '',
-          price: data.product.price?.toString() || '',
-          oldPrice: data.product.oldPrice?.toString() || '',
-          category: data.product.category || '',
-          image: data.product.image || '',
-          description: data.product.description || '',
-          description_en: data.product.description_en || '',
-          inStock: data.product.inStock ?? true,
+          name: product.name || '',
+          name_en: product.name_en || '',
+          price: product.price?.toString() || '',
+          oldPrice: product.oldPrice?.toString() || '',
+          category: product.category || '',
+          subcategory: product.subcategory || '',
+          image: product.image || '',
+          description: product.description || '',
+          description_en: product.description_en || '',
+          inStock: product.inStock ?? true,
         });
+        setImagePreview(product.image || '');
       }
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -158,28 +237,65 @@ export default function EditProduct() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Category *
               </label>
-              <input
-                type="text"
+              <select
                 required
                 value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value, subcategory: '' })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="e.g., Vegetables"
-              />
+                disabled={categoriesLoading}
+              >
+                <option value="">Select a category</option>
+                {categories.map((cat: any) => (
+                  <option key={cat._id} value={cat.name_en}>
+                    {cat.icon} {cat.name} ({cat.name_en})
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Image URL *
+                Subcategory
               </label>
-              <input
-                type="url"
-                required
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+              <select
+                value={formData.subcategory}
+                onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="https://example.com/image.jpg"
-              />
+                disabled={!selectedCategory || !selectedCategory.subcategories || selectedCategory.subcategories.length === 0}
+              >
+                <option value="">Select a subcategory (optional)</option>
+                {selectedCategory?.subcategories?.map((sub: string, index: number) => (
+                  <option key={index} value={sub}>
+                    {sub}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Product Image *
+              </label>
+              <div className="space-y-3">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={handleFileChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                />
+                {uploading && (
+                  <p className="text-sm text-gray-500">Uploading image...</p>
+                )}
+                {imagePreview && (
+                  <div className="mt-2">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

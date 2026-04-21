@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     const id = searchParams.get('id');
     const search = searchParams.get('search');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
     const offset = parseInt(searchParams.get('offset') || '0');
 
     if (id) {
@@ -41,10 +41,13 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const products = await Product.find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .skip(offset);
+    let queryBuilder = Product.find(query).sort({ createdAt: -1 });
+    
+    if (limit) {
+      queryBuilder = queryBuilder.limit(limit);
+    }
+    
+    const products = await queryBuilder.skip(offset);
 
     const total = await Product.countDocuments(query);
 
@@ -52,9 +55,9 @@ export async function GET(request: NextRequest) {
       products,
       pagination: {
         total,
-        limit,
+        limit: limit || total,
         offset,
-        hasMore: offset + limit < total
+        hasMore: limit ? offset + limit < total : false
       }
     });
   } catch (error) {

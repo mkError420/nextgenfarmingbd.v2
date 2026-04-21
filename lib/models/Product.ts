@@ -5,7 +5,10 @@ export interface IProduct extends Document {
   name_en: string;
   price: number;
   oldPrice?: number;
-  image: string;
+  image?: string;
+  images: string[];
+  galleryImages: string[];
+  mainImageIndex: number;
   category: string;
   rating: number;
   reviews: number;
@@ -39,7 +42,31 @@ const ProductSchema: Schema = new Schema({
   },
   image: {
     type: String,
+  },
+  images: {
+    type: [String],
     required: true,
+    validate: {
+      validator: function(v: string[]) {
+        return v && v.length > 0;
+      },
+      message: 'At least one image is required'
+    }
+  },
+  galleryImages: {
+    type: [String],
+    default: [],
+    validate: {
+      validator: function(v: string[]) {
+        return v.length <= 2;
+      },
+      message: 'Maximum 2 gallery images allowed'
+    }
+  },
+  mainImageIndex: {
+    type: Number,
+    default: 0,
+    min: 0,
   },
   category: {
     type: String,
@@ -79,4 +106,7 @@ ProductSchema.index({ category: 1, createdAt: -1 });
 ProductSchema.index({ name: 'text', name_en: 'text' });
 ProductSchema.index({ price: 1 });
 
-export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);
+// Force model reload to apply schema changes
+delete mongoose.models.Product;
+delete (mongoose.connection.models as any)['Product'];
+export default mongoose.model<IProduct>('Product', ProductSchema);

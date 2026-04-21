@@ -69,12 +69,20 @@ export default function SingleProductPage() {
         'পারফেক্ট স্বাদের নিশ্চয়তা'
       ],
       variants: [baseProduct.weight || 'Regular', '৫০০ গ্রাম', '১ কেজি'],
-      images: [
-        baseProduct.image,
-        `https://picsum.photos/seed/${baseProduct._id || baseProduct.id}-2/800/800`,
-        `https://picsum.photos/seed/${baseProduct._id || baseProduct.id}-3/800/800`
-      ],
-      details: baseProduct.description_en || `${baseProduct.name} - এর অসাধারণ গুণাগুণ এবং স্বাদ আপনাকে মুগ্ধ করবে। আমরা সরাসরি বিশ্বস্ত উৎস থেকে এই পণ্যটি সংগ্রহ করি এবং অত্যন্ত নিবিড়ভাবে এর মান নিয়ন্ত্রণ করি। আপনার পরিবারের সুস্থতায় আমরা সবসময় আপোষহীন।`,
+      images: (baseProduct.images && baseProduct.images.length > 0) 
+        ? baseProduct.images 
+        : (baseProduct.image 
+            ? [
+                baseProduct.image,
+                `https://picsum.photos/seed/${baseProduct._id || baseProduct.id}-2/800/800`,
+                `https://picsum.photos/seed/${baseProduct._id || baseProduct.id}-3/800/800`
+              ]
+            : []),
+      galleryImages: (baseProduct.galleryImages && baseProduct.galleryImages.length > 0)
+        ? baseProduct.galleryImages
+        : [],
+      mainImageIndex: baseProduct.mainImageIndex ?? 0,
+      details: baseProduct.description_en || '',
       deliveryInfo: 'ঢাকার ভেতরে অথবা ১০০০০ টাকার উপরে কেনাকাটায় ফ্রি ডেলিভারি! ঢাকার ভেতরে ২৪-৪৮ ঘণ্টা এবং ঢাকার বাইরে ৩-৫ কার্যদিবসের মধ্যে কুরিয়ারের মাধ্যমে আমরা পণ্য প্রতিটি জেলায় পৌঁছে দিয়ে থাকি।'
     };
   }, [baseProduct]);
@@ -92,7 +100,8 @@ export default function SingleProductPage() {
 
   useEffect(() => {
     if (product) {
-      setMainImage(product.images[0] || '');
+      const mainIndex = product.mainImageIndex ?? 0;
+      setMainImage(product.images[Math.min(mainIndex, product.images.length - 1)] || '');
       setSelectedVariant(product.variants[0] || '');
     }
   }, [product]);
@@ -128,12 +137,14 @@ export default function SingleProductPage() {
   const handleAddToCart = () => {
     if (!product) return;
     
+    const productImage = product.images?.[0] || product.image || '';
+    
     addToCart({
       id: product.id,
       name: product.name,
       price: product.price,
       quantity: quantity,
-      image: product.image,
+      image: productImage,
       variant: selectedVariant
     });
 
@@ -216,14 +227,16 @@ export default function SingleProductPage() {
                  onClick={() => setIsLightboxOpen(true)}
                  className="relative aspect-square rounded-[3rem] overflow-hidden bg-white border border-emerald-50 shadow-xl cursor-zoom-in"
                >
-                  <Image 
-                    src={mainImage} 
-                    alt={product.name} 
-                    fill 
-                    className={`object-cover transition-transform duration-200 ease-out ${isZoomed ? 'scale-[2.5]' : 'scale-100'}`}
-                    style={{ transformOrigin: zoomOrigin }}
-                    referrerPolicy="no-referrer"
-                  />
+                  {mainImage && (
+                    <Image 
+                      src={mainImage} 
+                      alt={product.name} 
+                      fill 
+                      className={`object-cover transition-transform duration-200 ease-out ${isZoomed ? 'scale-[2.5]' : 'scale-100'}`}
+                      style={{ transformOrigin: zoomOrigin }}
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
                   {product.oldPrice && (
                     <div className="absolute top-6 left-6 bg-brand-red text-white text-xs font-black px-4 py-1.5 rounded-full shadow-lg">
                       {Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)}% OFF
@@ -232,7 +245,7 @@ export default function SingleProductPage() {
                </motion.div>
 
                <div className="flex gap-4">
-                  {product.images.map((img: string, i: number) => (
+                  {[...product.images, ...product.galleryImages].map((img: string, i: number) => (
                     <button 
                       key={i}
                       onClick={() => setMainImage(img)}
@@ -400,7 +413,11 @@ export default function SingleProductPage() {
                    {activeTab === 'details' && (
                      <div className="space-y-6">
                         <h3 className="text-2xl font-black text-brand-green-dark italic">বিস্তারিত বর্ণনা</h3>
-                        <p className="text-slate-500 italic leading-relaxed text-lg">{product.details}</p>
+                        {product.details ? (
+                          <p className="text-slate-500 italic leading-relaxed text-lg">{product.details}</p>
+                        ) : (
+                          <p className="text-slate-400 italic text-lg">বিস্তারিত তথ্য শীঘ্রই যুক্ত করা হবে।</p>
+                        )}
                      </div>
                    )}
                    {activeTab === 'delivery' && (
@@ -472,13 +489,15 @@ export default function SingleProductPage() {
                className="relative w-full max-w-5xl aspect-square"
                onClick={(e) => e.stopPropagation()}
              >
-                <Image 
-                  src={mainImage} 
-                  alt={product.name} 
-                  fill 
-                  className="object-contain"
-                  referrerPolicy="no-referrer"
-                />
+                {mainImage && (
+                  <Image 
+                    src={mainImage} 
+                    alt={product.name} 
+                    fill 
+                    className="object-contain"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
              </motion.div>
           </motion.div>
         )}

@@ -11,10 +11,17 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const { id } = params;
     const updateData = await request.json();
 
+    console.log('Update data received:', updateData);
+
     // Check if product exists
     const product = await Product.findById(id);
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
+    // Validate images array if provided
+    if (updateData.images && (!Array.isArray(updateData.images) || updateData.images.length === 0)) {
+      return NextResponse.json({ error: 'At least one image is required' }, { status: 400 });
     }
 
     const updatedProduct = await Product.findByIdAndUpdate(

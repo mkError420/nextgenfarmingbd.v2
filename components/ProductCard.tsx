@@ -11,7 +11,8 @@ interface ProductCardProps {
     name: string;
     price: number;
     oldPrice?: number;
-    image: string;
+    image?: string;
+    images?: string[];
     rating: number;
     reviews: number;
     weight: string;
@@ -26,6 +27,7 @@ import { toast } from 'react-hot-toast';
 export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart, setIsDrawerOpen } = useCart();
   const discount = product.oldPrice ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100) : 0;
+  const productImage = product.images?.[0] || product.image || '';
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -35,7 +37,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       name: product.name,
       price: product.price,
       quantity: 1,
-      image: product.image,
+      image: productImage,
       variant: product.weight
     });
     
@@ -61,7 +63,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       <Link href={`/shop/${product._id || product.id}`}>
         <div className="relative aspect-square overflow-hidden bg-[#f9faf5] rounded-2xl border border-slate-100 flex items-center justify-center cursor-pointer">
           <Image 
-            src={product.image} 
+            src={productImage} 
             alt={product.name} 
             fill
             className="object-cover group-hover:scale-110 transition-transform duration-500"

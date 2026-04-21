@@ -111,7 +111,7 @@ export default function AdminProducts() {
                 <tr key={product._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <img
-                      src={product.image}
+                      src={product.images?.[0] || product.image || ''}
                       alt={product.name}
                       className="w-12 h-12 object-cover rounded"
                     />

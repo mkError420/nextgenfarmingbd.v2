@@ -20,12 +20,15 @@ export default function EditProduct() {
     oldPrice: '',
     category: '',
     subcategory: '',
-    image: '',
+    images: [] as string[],
+    galleryImages: [] as string[],
+    mainImageIndex: 0,
     description: '',
     description_en: '',
     inStock: true,
   });
-  const [imagePreview, setImagePreview] = useState<string>('');
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [galleryImagePreviews, setGalleryImagePreviews] = useState<string[]>([]);
 
   useEffect(() => {
     fetchProduct();
@@ -46,11 +49,13 @@ export default function EditProduct() {
 
   const selectedCategory = categories.find((cat: any) => cat.name_en === formData.category);
 
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = async (files: File[], type: 'main' | 'gallery') => {
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      files.forEach((file) => formData.append('files', file));
+
+      console.log('Uploading files:', files);
 
       const res = await fetch('/api/upload', {
         method: 'POST',
@@ -59,25 +64,42 @@ export default function EditProduct() {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || 'Failed to upload image');
+        throw new Error(error.error || 'Failed to upload images');
       }
 
       const data = await res.json();
-      setFormData((prev) => ({ ...prev, image: data.url }));
-      setImagePreview(data.url);
+      console.log('Upload response:', data);
+      
+      if (type === 'main') {
+        setFormData((prev) => ({ ...prev, images: data.urls }));
+        setImagePreviews(data.urls);
+      } else {
+        setFormData((prev) => ({ ...prev, galleryImages: data.urls }));
+        setGalleryImagePreviews(data.urls);
+      }
+      
+      console.log('Form data after upload:', data.urls);
     } catch (error) {
-      console.error('Error uploading image:', error);
-      alert('Failed to upload image. Please try again.');
+      console.error('Error uploading images:', error);
+      alert('Failed to upload images. Please try again.');
     } finally {
       setUploading(false);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'main' | 'gallery') => {
+    const files = Array.from(e.target.files || []);
+    const maxFiles = type === 'main' ? 3 : 2;
+    
+    if (files.length > maxFiles) {
+      alert(`Please select up to ${maxFiles} images only.`);
+      return;
+    }
+    if (files.length === 0) return;
+
+    // Validate file types
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    for (const file of files) {
       if (!allowedTypes.includes(file.type)) {
         alert('Only JPG, JPEG, PNG, and WebP files are allowed.');
         return;
@@ -89,17 +111,27 @@ export default function EditProduct() {
         alert('File size must be less than 5MB.');
         return;
       }
+    }
 
-      // Create preview
+    // Create previews
+    const previews: string[] = [];
+    files.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        previews.push(reader.result as string);
+        if (previews.length === files.length) {
+          if (type === 'main') {
+            setImagePreviews(previews);
+          } else {
+            setGalleryImagePreviews(previews);
+          }
+        }
       };
       reader.readAsDataURL(file);
+    });
 
-      // Auto-upload the image
-      handleImageUpload(file);
-    }
+    // Auto-upload the images
+    handleImageUpload(files, type);
   };
 
   const fetchProduct = async () => {
@@ -108,6 +140,13 @@ export default function EditProduct() {
       const data = await res.json();
       const product = data.product || data;
       if (product) {
+        // Handle backward compatibility: convert single image to images array
+        const productImages = product.images && product.images.length > 0 
+          ? product.images 
+          : (product.image ? [product.image] : []);
+        const productGalleryImages = product.galleryImages || [];
+        const productMainImageIndex = product.mainImageIndex ?? 0;
+        
         setFormData({
           name: product.name || '',
           name_en: product.name_en || '',
@@ -115,12 +154,15 @@ export default function EditProduct() {
           oldPrice: product.oldPrice?.toString() || '',
           category: product.category || '',
           subcategory: product.subcategory || '',
-          image: product.image || '',
+          images: productImages,
+          galleryImages: productGalleryImages,
+          mainImageIndex: productMainImageIndex,
           description: product.description || '',
           description_en: product.description_en || '',
           inStock: product.inStock ?? true,
         });
-        setImagePreview(product.image || '');
+        setImagePreviews(productImages);
+        setGalleryImagePreviews(productGalleryImages);
       }
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -131,7 +173,16 @@ export default function EditProduct() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (uploading) {
+      alert('Please wait for images to finish uploading.');
+      return;
+    }
+
     setSaving(true);
+
+    console.log('Submitting form data:', formData);
+    console.log('Images in form data:', formData.images);
 
     try {
       const res = await fetch(`/api/products/${params.id}`, {
@@ -148,6 +199,7 @@ export default function EditProduct() {
         router.push('/admin/products');
       } else {
         const error = await res.json();
+        console.error('Update error:', error);
         alert(error.error || 'Failed to update product');
       }
     } catch (error) {
@@ -274,25 +326,74 @@ export default function EditProduct() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Product Image *
+                Product Images (up to 3) *
               </label>
               <div className="space-y-3">
                 <input
                   type="file"
                   accept="image/jpeg,image/jpg,image/png,image/webp"
-                  onChange={handleFileChange}
+                  multiple
+                  max={3}
+                  onChange={(e) => handleFileChange(e, 'main')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
                 />
                 {uploading && (
-                  <p className="text-sm text-gray-500">Uploading image...</p>
+                  <p className="text-sm text-gray-500">Uploading images...</p>
                 )}
-                {imagePreview && (
-                  <div className="mt-2">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="w-32 h-32 object-cover rounded-lg border border-gray-200"
-                    />
+                {imagePreviews.length > 0 && (
+                  <div className="mt-2 space-y-2">
+                    <div className="flex gap-2">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={preview}
+                            alt={`Preview ${index + 1}`}
+                            className={`w-32 h-32 object-cover rounded-lg border-2 ${formData.mainImageIndex === index ? 'border-green-500' : 'border-gray-200'}`}
+                          />
+                          <div className="absolute top-2 right-2">
+                            <input
+                              type="radio"
+                              name="mainImage"
+                              checked={formData.mainImageIndex === index}
+                              onChange={() => setFormData({ ...formData, mainImageIndex: index })}
+                              className="w-5 h-5 accent-green-600"
+                            />
+                          </div>
+                          <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                            {formData.mainImageIndex === index ? 'Main' : ''}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500">Select the radio button to mark as main image</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Gallery Images (up to 2 for single page)
+              </label>
+              <div className="space-y-3">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  multiple
+                  max={2}
+                  onChange={(e) => handleFileChange(e, 'gallery')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                />
+                {galleryImagePreviews.length > 0 && (
+                  <div className="mt-2 flex gap-2">
+                    {galleryImagePreviews.map((preview, index) => (
+                      <img
+                        key={index}
+                        src={preview}
+                        alt={`Gallery Preview ${index + 1}`}
+                        className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                      />
+                    ))}
                   </div>
                 )}
               </div>

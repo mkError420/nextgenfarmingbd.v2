@@ -72,20 +72,34 @@ export async function POST(request: NextRequest) {
     
     const productData = await request.json();
     
+    console.log('Product data received:', productData);
+    
     // Validate required fields
-    const requiredFields = ['name', 'name_en', 'price', 'category', 'image'];
+    const requiredFields = ['name', 'name_en', 'price', 'category', 'images'];
     for (const field of requiredFields) {
       if (!productData[field]) {
         return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
       }
     }
+    
+    // Validate images array
+    if (!Array.isArray(productData.images) || productData.images.length === 0) {
+      return NextResponse.json({ error: 'At least one image is required' }, { status: 400 });
+    }
 
     const product = new Product(productData);
     await product.save();
     
+    console.log('Product saved successfully:', product);
+    
     return NextResponse.json(product, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating product:', error);
-    return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
+    if (error.errors) {
+      console.error('Validation errors:', error.errors);
+    }
+    return NextResponse.json({ error: error.message || 'Failed to create product' }, { status: 500 });
   }
 }

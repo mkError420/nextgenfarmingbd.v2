@@ -1,0 +1,105 @@
+{
+  "entities": {
+    "admin": {
+      "title": "Admin",
+      "description": "Admin users allowed to access the dashboard",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "number"
+        }
+      },
+      "required": ["email", "role", "createdAt"]
+    },
+    "product": {
+      "title": "Product",
+      "description": "Product data",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "name_en": { "type": "string" },
+        "price": { "type": "number" },
+        "oldPrice": { "type": "number" },
+        "category": { "type": "string" },
+        "image": { "type": "string" },
+        "rating": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["name", "price", "category", "createdAt"]
+    },
+    "order": {
+      "title": "Order",
+      "description": "Customer order data",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "items": { "type": "array" },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "processing", "shipped", "delivered", "cancelled"] },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["customerName", "phone", "address", "items", "totalAmount", "status", "createdAt"]
+    },
+    "category": {
+      "title": "Category",
+      "description": "Categories and sub-categories",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["product", "blog"] },
+        "parentId": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["name", "type", "createdAt"]
+    },
+    "blog": {
+      "title": "Blog Post",
+      "description": "Blog posts",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "image": { "type": "string" },
+        "author": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["title", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "admins/{adminId}": {
+      "schema": { "$ref": "#/entities/admin" },
+      "description": "List of administrators"
+    },
+    "products/{productId}": {
+      "schema": { "$ref": "#/entities/product" },
+      "description": "List of products"
+    },
+    "orders/{orderId}": {
+      "schema": { "$ref": "#/entities/order" },
+      "description": "List of orders"
+    },
+    "categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/category" },
+      "description": "Categories lookup"
+    },
+    "blogs/{blogId}": {
+      "schema": { "$ref": "#/entities/blog" },
+      "description": "Blog posts"
+    }
+  }
+}

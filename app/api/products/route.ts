@@ -15,6 +15,9 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
     const offset = parseInt(searchParams.get('offset') || '0');
 
+    console.log('API - Category filter:', category);
+    console.log('API - Search term:', search);
+
     if (id) {
       // Get single product by ID
       const product = await Product.findById(id);
@@ -31,6 +34,7 @@ export async function GET(request: NextRequest) {
     
     if (category) {
       query.category = category;
+      console.log('API - Query with category filter:', query);
     }
     
     if (search) {
@@ -50,6 +54,13 @@ export async function GET(request: NextRequest) {
     const products = await queryBuilder.skip(offset);
 
     const total = await Product.countDocuments(query);
+
+    console.log('API - Total products found:', total);
+    console.log('API - Products returned:', products.length);
+    
+    // Log unique categories from products
+    const uniqueCategories = await Product.distinct('category');
+    console.log('API - All unique categories in products:', uniqueCategories);
 
     return NextResponse.json({ 
       products,

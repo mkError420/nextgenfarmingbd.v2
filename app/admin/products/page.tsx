@@ -2,22 +2,59 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const itemsPerPage = 7;
 
   useEffect(() => {
+    fetchCategories();
     fetchProducts();
-  }, []);
+  }, [currentPage, selectedCategory, searchTerm]);
+
+  const fetchCategories = async () => {
+    try {
+      // Fetch unique categories from products instead of Categories collection
+      const res = await fetch('/api/products?limit=1000');
+      const data = await res.json();
+      const allProducts = data.products || [];
+      const uniqueCategories = [...new Set(allProducts.map((p: any) => p.category).filter(Boolean))] as string[];
+      console.log('Unique categories from products:', uniqueCategories);
+      setCategories(uniqueCategories);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('/api/products?limit=50');
+      setLoading(true);
+      const offset = (currentPage - 1) * itemsPerPage;
+      let url = `/api/products?limit=${itemsPerPage}&offset=${offset}`;
+      
+      if (selectedCategory) {
+        url += `&category=${encodeURIComponent(selectedCategory)}`;
+      }
+      
+      if (searchTerm) {
+        url += `&search=${encodeURIComponent(searchTerm)}`;
+      }
+      
+      console.log('Fetching products with URL:', url);
+      console.log('Selected category:', selectedCategory);
+      
+      const res = await fetch(url);
       const data = await res.json();
+      console.log('Products data:', data);
       setProducts(data.products || []);
+      setTotalProducts(data.pagination?.total || 0);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -44,10 +81,7 @@ export default function AdminProducts() {
     }
   };
 
-  const filteredProducts = products.filter((product: any) =>
-    product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.name_en?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = products;
 
   if (loading) {
     return <div className="text-center py-8">Loading...</div>;
@@ -66,18 +100,34 @@ export default function AdminProducts() {
         </Link>
       </div>
 
-      {/* Search */}
-      <div className="mb-6">
-        <div className="relative">
+      {/* Search and Filter */}
+      <div className="mb-6 flex gap-4">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
             placeholder="Search products..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
           />
         </div>
+        <select
+          value={selectedCategory}
+          onChange={(e) => {
+            setSelectedCategory(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+        >
+          <option value="">All Categories</option>
+          {categories.map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
       </div>
 
       {/* Products Table */}
@@ -165,6 +215,46 @@ export default function AdminProducts() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalProducts > itemsPerPage && (
+        <div className="mt-6 flex items-center justify-between">
+          <div className="text-sm text-gray-500">
+            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalProducts)} of {totalProducts} products
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.ceil(totalProducts / itemsPerPage) }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-3 py-2 rounded-lg ${
+                    currentPage === page
+                      ? 'bg-green-600 text-white'
+                      : 'border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(Math.ceil(totalProducts / itemsPerPage), p + 1))}
+              disabled={currentPage === Math.ceil(totalProducts / itemsPerPage)}
+              className="flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

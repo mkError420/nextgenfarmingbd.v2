@@ -23,6 +23,7 @@ export default function NewProduct() {
     mainImageIndex: 0,
     description: '',
     description_en: '',
+    details: '',
     inStock: true,
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -381,6 +382,19 @@ export default function NewProduct() {
               rows={4}
               value={formData.description_en}
               onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              বিস্তারিত (Details for Single Product Page)
+            </label>
+            <textarea
+              rows={6}
+              value={formData.details}
+              onChange={(e) => setFormData({ ...formData, details: e.target.value })}
+              placeholder="Enter detailed product information that will appear in the 'বিস্তারিত' section on the single product page..."
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>

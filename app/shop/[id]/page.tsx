@@ -82,7 +82,7 @@ export default function SingleProductPage() {
         ? baseProduct.galleryImages
         : [],
       mainImageIndex: baseProduct.mainImageIndex ?? 0,
-      details: baseProduct.description_en || '',
+      details: baseProduct.details || '',
       deliveryInfo: 'ঢাকার ভেতরে অথবা ১০০০০ টাকার উপরে কেনাকাটায় ফ্রি ডেলিভারি! ঢাকার ভেতরে ২৪-৪৮ ঘণ্টা এবং ঢাকার বাইরে ৩-৫ কার্যদিবসের মধ্যে কুরিয়ারের মাধ্যমে আমরা পণ্য প্রতিটি জেলায় পৌঁছে দিয়ে থাকি।'
     };
   }, [baseProduct]);

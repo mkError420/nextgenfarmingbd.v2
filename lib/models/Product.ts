@@ -15,6 +15,7 @@ export interface IProduct extends Document {
   weight?: string;
   inStock: boolean;
   description?: string;
+  details?: string;
   tags?: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -92,6 +93,9 @@ const ProductSchema: Schema = new Schema({
     default: true,
   },
   description: {
+    type: String,
+  },
+  details: {
     type: String,
   },
   tags: [{

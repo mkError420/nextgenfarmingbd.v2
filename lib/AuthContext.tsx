@@ -1,16 +1,22 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import { auth, db, googleProvider } from './firebase';
-import { doc, getDoc } from 'firebase/firestore';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  role: 'user' | 'admin';
+}
 
 interface AuthContextType {
   user: User | null;
   isAdmin: boolean | null; // null means loading
   loading: boolean;
-  login: () => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -19,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   login: async () => {},
   logout: async () => {},
+  register: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -27,67 +34,81 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        try {
-          // Check if user is admin
-          const docRef = doc(db, 'admins', currentUser.uid);
-          const docSnap = await getDoc(docRef);
-          
-          if (docSnap.exists()) {
-            setIsAdmin(true);
-          } else {
-            // First time logic: Check if user matches the admin email and create doc
-            if (currentUser.email === 'mk.rabbani.cse@gmail.com') {
-               try {
-                 const { setDoc } = await import('firebase/firestore');
-                 await setDoc(doc(db, 'admins', currentUser.uid), {
-                   email: currentUser.email,
-                   role: 'admin',
-                   createdAt: Date.now()
-                 });
-                 setIsAdmin(true);
-               } catch (err) {
-                 console.error("Failed to bootstrap admin from client:", err);
-                 setIsAdmin(false);
-               }
-            } else {
-              setIsAdmin(false);
-            }
-          }
-        } catch (error) {
-          console.error("Error checking admin status:", error);
-          setIsAdmin(false);
-        }
-      } else {
-        setIsAdmin(false);
+    // Check for stored user in localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setIsAdmin(parsedUser.role === 'admin');
+      } catch (error) {
+        console.error('Error parsing stored user:', error);
+        localStorage.removeItem('user');
       }
-      setLoading(false);
-    });
-
-    return unsubscribe;
+    }
+    setLoading(false);
   }, []);
 
-  const login = async () => {
+  const login = async (email: string, password: string) => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+
+      const userData = await response.json();
+      setUser(userData);
+      setIsAdmin(userData.role === 'admin');
+      localStorage.setItem('user', JSON.stringify(userData));
     } catch (error) {
-      console.error('Error signing in', error);
+      console.error('Error logging in:', error);
+      throw error;
+    }
+  };
+
+  const register = async (name: string, email: string, password: string) => {
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Registration failed');
+      }
+
+      const userData = await response.json();
+      setUser(userData);
+      setIsAdmin(userData.role === 'admin');
+      localStorage.setItem('user', JSON.stringify(userData));
+    } catch (error) {
+      console.error('Error registering:', error);
       throw error;
     }
   };
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      setUser(null);
+      setIsAdmin(false);
+      localStorage.removeItem('user');
     } catch (error) {
-      console.error('Error signing out', error);
+      console.error('Error logging out:', error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );

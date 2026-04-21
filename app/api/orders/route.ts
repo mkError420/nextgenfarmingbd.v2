@@ -44,8 +44,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching orders:', error);
     return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }
 
@@ -75,7 +73,5 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating order:', error);
     return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }

@@ -38,8 +38,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching banners:', error);
     return NextResponse.json({ error: 'Failed to fetch banners' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }
 
@@ -70,7 +68,5 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating banner:', error);
     return NextResponse.json({ error: 'Failed to create banner' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }

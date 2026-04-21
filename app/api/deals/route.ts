@@ -34,8 +34,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching deals:', error);
     return NextResponse.json({ error: 'Failed to fetch deals' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }
 
@@ -73,7 +71,5 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Deal code already exists' }, { status: 400 });
     }
     return NextResponse.json({ error: 'Failed to create deal' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }

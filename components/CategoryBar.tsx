@@ -1,10 +1,32 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { categories } from '@/lib/data';
 
 export default function CategoryBar() {
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/categories');
+      const data = await res.json();
+      setCategories(data.categories || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return null;
+  }
+
   return (
     <section className="py-8 md:py-12 bg-brand-bg">
       <div className="max-w-7xl mx-auto px-8">
@@ -15,11 +37,11 @@ export default function CategoryBar() {
           </h2>
           <span className="text-sm text-brand-green font-bold cursor-pointer hover:underline">সবগুলো দেখুন →</span>
         </div>
-        
+
         <div className="flex overflow-x-auto pb-4 gap-4 no-scrollbar -mx-4 px-4 md:grid md:grid-cols-5 lg:grid-cols-10 md:overflow-visible">
-          {categories.map((cat) => (
-            <Link 
-              key={cat.id}
+          {categories.map((cat: any) => (
+            <Link
+              key={cat._id}
               href={`/shop?category=${encodeURIComponent(cat.name_en)}`}
               className="flex-shrink-0 group flex flex-col items-center gap-4 p-4 rounded-3xl hover:bg-white hover:shadow-md transition-all text-center border border-transparent hover:border-emerald-50"
             >

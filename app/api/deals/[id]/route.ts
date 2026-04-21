@@ -30,8 +30,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   } catch (error) {
     console.error('Error updating deal:', error);
     return NextResponse.json({ error: 'Failed to update deal' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }
 
@@ -53,7 +51,5 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   } catch (error) {
     console.error('Error deleting deal:', error);
     return NextResponse.json({ error: 'Failed to delete deal' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }

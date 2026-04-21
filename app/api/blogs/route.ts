@@ -34,8 +34,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching blogs:', error);
     return NextResponse.json({ error: 'Failed to fetch blogs' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }
 
@@ -68,7 +66,5 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Slug already exists' }, { status: 400 });
     }
     return NextResponse.json({ error: 'Failed to create blog' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }

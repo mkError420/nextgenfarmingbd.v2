@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import { products, categories } from '@/lib/data';
+import { products } from '@/lib/data';
 import { Filter, SlidersHorizontal, ChevronDown, LayoutGrid, List, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSearchParams } from 'next/navigation';
@@ -19,6 +19,24 @@ function ShopContent() {
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [maxPrice, setMaxPrice] = useState(6000);
   const [searchQuery, setSearchQuery] = useState(searchParam);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/categories');
+      const data = await res.json();
+      setCategories(data.categories || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
 
   const sortOptions = [
     { id: 'default', name: 'ডিফল্ট' },
@@ -170,8 +188,8 @@ function ShopContent() {
                             exit={{ height: 0, opacity: 0 }}
                             className="overflow-hidden pl-8 pr-2 space-y-1"
                           >
-                            {cat.subcategories.map((sub, index) => (
-                              <button 
+                            {cat.subcategories?.map((sub: string, index: number) => (
+                              <button
                                 key={index}
                                 className="w-full text-left px-3 py-2 text-xs text-slate-400 hover:text-brand-green font-bold transition-colors flex items-center justify-between group"
                               >

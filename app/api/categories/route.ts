@@ -8,14 +8,24 @@ export async function GET(request: NextRequest) {
   try {
     await mongoose.connect(MONGODB_URI);
     
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (id) {
+      // Get single category by ID
+      const category = await Category.findById(id);
+      if (!category) {
+        return NextResponse.json({ error: 'Category not found' }, { status: 404 });
+      }
+      return NextResponse.json({ category });
+    }
+
     const categories = await Category.find({ isActive: true }).sort({ name: 1 });
 
     return NextResponse.json({ categories });
   } catch (error) {
     console.error('Error fetching categories:', error);
     return NextResponse.json({ error: 'Failed to fetch categories' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }
 
@@ -40,7 +50,58 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating category:', error);
     return NextResponse.json({ error: 'Failed to create category' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    await mongoose.connect(MONGODB_URI);
+    
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const updateData = await request.json();
+
+    if (!id) {
+      return NextResponse.json({ error: 'Category ID is required' }, { status: 400 });
+    }
+
+    // Check if category exists
+    const category = await Category.findById(id);
+    if (!category) {
+      return NextResponse.json({ error: 'Category not found' }, { status: 404 });
+    }
+
+    const updatedCategory = await Category.findByIdAndUpdate(id, updateData, { new: true });
+    
+    return NextResponse.json(updatedCategory);
+  } catch (error) {
+    console.error('Error updating category:', error);
+    return NextResponse.json({ error: 'Failed to update category' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    await mongoose.connect(MONGODB_URI);
+    
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Category ID is required' }, { status: 400 });
+    }
+
+    // Check if category exists
+    const category = await Category.findById(id);
+    if (!category) {
+      return NextResponse.json({ error: 'Category not found' }, { status: 404 });
+    }
+
+    await Category.findByIdAndDelete(id);
+    
+    return NextResponse.json({ message: 'Category deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    return NextResponse.json({ error: 'Failed to delete category' }, { status: 500 });
   }
 }

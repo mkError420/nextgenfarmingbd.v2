@@ -23,15 +23,20 @@ export default function EditCategory() {
 
   const fetchCategory = async () => {
     try {
-      const res = await fetch(`/api/categories`);
+      const res = await fetch(`/api/categories?id=${params.id}`);
+      if (!res.ok) {
+        console.error('API response not OK:', res.status, res.statusText);
+        const text = await res.text();
+        console.error('Response text:', text);
+        throw new Error(`Failed to fetch category: ${res.status}`);
+      }
       const data = await res.json();
-      const category = data.categories?.find((c: any) => c._id === params.id);
-      if (category) {
+      if (data.category) {
         setFormData({
-          name: category.name || '',
-          name_en: category.name_en || '',
-          icon: category.icon || '',
-          subcategories: category.subcategories?.length ? category.subcategories : [''],
+          name: data.category.name || '',
+          name_en: data.category.name_en || '',
+          icon: data.category.icon || '',
+          subcategories: data.category.subcategories?.length ? data.category.subcategories : [''],
         });
       }
     } catch (error) {
@@ -61,7 +66,7 @@ export default function EditCategory() {
     setSaving(true);
 
     try {
-      const res = await fetch(`/api/categories/${params.id}`, {
+      const res = await fetch(`/api/categories?id=${params.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

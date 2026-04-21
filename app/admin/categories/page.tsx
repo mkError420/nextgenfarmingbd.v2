@@ -29,7 +29,7 @@ export default function AdminCategories() {
     if (!confirm('Are you sure you want to delete this category?')) return;
 
     try {
-      const res = await fetch(`/api/categories/${id}`, {
+      const res = await fetch(`/api/categories?id=${id}`, {
         method: 'DELETE',
       });
       

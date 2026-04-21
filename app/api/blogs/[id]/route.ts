@@ -24,8 +24,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   } catch (error) {
     console.error('Error fetching blog:', error);
     return NextResponse.json({ error: 'Failed to fetch blog' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }
 
@@ -53,8 +51,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error) {
     console.error('Error updating blog:', error);
     return NextResponse.json({ error: 'Failed to update blog' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }
 
@@ -76,7 +72,5 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   } catch (error) {
     console.error('Error deleting blog:', error);
     return NextResponse.json({ error: 'Failed to delete blog' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }

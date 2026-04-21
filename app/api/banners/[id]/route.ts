@@ -23,8 +23,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   } catch (error) {
     console.error('Error updating banner:', error);
     return NextResponse.json({ error: 'Failed to update banner' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }
 
@@ -46,7 +44,5 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   } catch (error) {
     console.error('Error deleting banner:', error);
     return NextResponse.json({ error: 'Failed to delete banner' }, { status: 500 });
-  } finally {
-    await mongoose.disconnect();
   }
 }

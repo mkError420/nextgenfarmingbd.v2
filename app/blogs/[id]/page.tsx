@@ -39,12 +39,18 @@ export default function BlogDetailPage() {
 
   const fetchBlog = async () => {
     try {
-      const res = await fetch('/api/blogs');
+      const res = await fetch(`/api/blogs/${params.id}`);
       const data = await res.json();
-      const foundPost = data.blogs?.find((p: BlogPost) => p.slug === params.id);
-      setPost(foundPost || null);
+      
+      if (res.ok && data.blog) {
+        setPost(data.blog);
+      } else {
+        console.error('Blog not found:', data.error);
+        setPost(null);
+      }
     } catch (error) {
       console.error('Error fetching blog:', error);
+      setPost(null);
     } finally {
       setLoading(false);
     }

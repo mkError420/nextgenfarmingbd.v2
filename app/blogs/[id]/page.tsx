@@ -1,19 +1,67 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Image from 'next/image';
-import { Calendar, User, Clock, ArrowLeft, Share2, Facebook, Twitter, Link as LinkIcon, Bookmark } from 'lucide-react';
+import { Calendar, User, Clock, ArrowLeft, Share2, Facebook, Twitter, Link as LinkIcon, Bookmark, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { blogPosts } from '@/lib/data';
+
+interface BlogPost {
+  _id: string;
+  title: string;
+  title_en?: string;
+  slug: string;
+  excerpt?: string;
+  excerpt_en?: string;
+  content: string;
+  content_en?: string;
+  featuredImage?: string;
+  author: string;
+  tags?: string[];
+  category?: string;
+  status: string;
+  publishedAt?: Date;
+  createdAt: Date;
+}
 
 export default function BlogDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const post = blogPosts.find(p => p.id === params.id);
+  const [post, setPost] = useState<BlogPost | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchBlog();
+  }, [params.id]);
+
+  const fetchBlog = async () => {
+    try {
+      const res = await fetch('/api/blogs');
+      const data = await res.json();
+      const foundPost = data.blogs?.find((p: BlogPost) => p.slug === params.id);
+      setPost(foundPost || null);
+    } catch (error) {
+      console.error('Error fetching blog:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (date: Date | string) => {
+    const d = new Date(date);
+    return d.toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-brand-bg">
+        <Loader2 className="w-8 h-8 text-brand-green animate-spin" />
+      </div>
+    );
+  }
 
   if (!post) {
     return (
@@ -35,7 +83,7 @@ export default function BlogDetailPage() {
       {/* Blog Hero */}
       <section className="relative h-[60vh] md:h-[70vh] min-h-[400px] overflow-hidden">
         <Image 
-          src={post.image} 
+          src={post.featuredImage || 'https://picsum.photos/seed/blog/1200/800'} 
           alt={post.title}
           fill
           className="object-cover"
@@ -51,12 +99,11 @@ export default function BlogDetailPage() {
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center gap-3"
             >
-              <span className="bg-brand-green text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest italic">
-                {post.category}
-              </span>
-              <span className="text-white/60 text-xs font-bold italic flex items-center gap-1.5">
-                <Clock size={14} /> {post.readTime} Read
-              </span>
+              {post.category && (
+                <span className="bg-brand-green text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest italic">
+                  {post.category}
+                </span>
+              )}
             </motion.div>
             
             <motion.h1 
@@ -84,7 +131,7 @@ export default function BlogDetailPage() {
                  </div>
                </div>
                <div className="flex items-center gap-2 text-white/60 text-sm italic">
-                 <Calendar size={16} /> {post.date}
+                 <Calendar size={16} /> {formatDate(post.publishedAt || post.createdAt)}
                </div>
             </motion.div>
           </div>
@@ -136,11 +183,13 @@ export default function BlogDetailPage() {
              {/* Bottom bar */}
              <div className="pt-12 border-t border-slate-100 flex flex-wrap items-center justify-between gap-6">
                 <div className="flex gap-2">
-                   {['#মধু', '#স্বাস্থ্য', '#খাঁটিপণ্য'].map((tag, i) => (
+                   {post.tags && post.tags.length > 0 ? post.tags.map((tag, i) => (
                      <span key={i} className="px-4 py-2 bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-xl">
-                       {tag}
+                       #{tag}
                      </span>
-                   ))}
+                   )) : (
+                     <span className="text-slate-400 text-sm italic">কোনো ট্যাগ নেই</span>
+                   )}
                 </div>
                 <div className="flex items-center gap-4">
                    <span className="text-slate-400 text-xs font-bold italic flex items-center gap-2">

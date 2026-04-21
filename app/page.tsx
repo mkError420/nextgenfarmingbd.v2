@@ -3,6 +3,7 @@
 import Header from '@/components/Header';
 import Hero from '@/components/Hero';
 import CategoryBar from '@/components/CategoryBar';
+import BannerCarousel from '@/components/BannerCarousel';
 import Image from 'next/image';
 import ProductCard from '@/components/ProductCard';
 import Footer from '@/components/Footer';
@@ -46,6 +47,8 @@ export default function Home() {
       </div>
 
       <Hero />
+
+      <BannerCarousel />
 
       {/* Product Ticker */}
       <div className="bg-white py-4 border-b border-emerald-50 overflow-hidden select-none">

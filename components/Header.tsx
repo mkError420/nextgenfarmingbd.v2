@@ -81,6 +81,7 @@ export default function Header() {
           <Link href="/shop" className="text-sm font-bold text-slate-700 hover:text-brand-green transition-colors">Shop</Link>
           <Link href="/about" className="text-sm font-bold text-slate-700 hover:text-brand-green transition-colors">About</Link>
           <Link href="/blogs" className="text-sm font-bold text-slate-700 hover:text-brand-green transition-colors">Blogs</Link>
+          <Link href="/deals" className="text-sm font-bold text-slate-700 hover:text-brand-green transition-colors">Deals</Link>
           <Link href="/contact" className="text-sm font-bold text-slate-700 hover:text-brand-green transition-colors">Contact Us</Link>
         </nav>
 
@@ -259,6 +260,7 @@ export default function Header() {
                     <Link href="/shop" onClick={() => setIsMenuOpen(false)} className="block p-3 font-medium hover:bg-gray-100 rounded-lg">Shop</Link>
                     <Link href="/about" onClick={() => setIsMenuOpen(false)} className="block p-3 font-medium hover:bg-gray-100 rounded-lg">About</Link>
                     <Link href="/blogs" onClick={() => setIsMenuOpen(false)} className="block p-3 font-medium hover:bg-gray-100 rounded-lg">Blogs</Link>
+                    <Link href="/deals" onClick={() => setIsMenuOpen(false)} className="block p-3 font-medium hover:bg-gray-100 rounded-lg">Deals</Link>
                     <Link href="/contact" onClick={() => setIsMenuOpen(false)} className="block p-3 font-medium hover:bg-gray-100 rounded-lg">Contact Us</Link>
                   </div>
                 </div>

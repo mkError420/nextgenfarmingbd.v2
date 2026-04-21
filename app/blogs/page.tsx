@@ -1,30 +1,69 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Image from 'next/image';
-import { Calendar, User, ArrowRight, Search, Tag, ChevronRight, Mail, Sparkles, TrendingUp } from 'lucide-react';
+import { Calendar, User, ArrowRight, Search, Tag, ChevronRight, Mail, Sparkles, TrendingUp, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 
-import { blogPosts, blogCategories } from '@/lib/data';
-
-const recentPosts = blogPosts.slice(0, 3);
+interface BlogPost {
+  _id: string;
+  title: string;
+  title_en?: string;
+  slug: string;
+  excerpt?: string;
+  excerpt_en?: string;
+  featuredImage?: string;
+  author: string;
+  tags?: string[];
+  category?: string;
+  status: string;
+  publishedAt?: Date;
+  createdAt: Date;
+}
 
 export default function BlogsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchBlogs();
+  }, []);
+
+  const fetchBlogs = async () => {
+    try {
+      const res = await fetch('/api/blogs?status=published');
+      const data = await res.json();
+      setBlogPosts(data.blogs || []);
+    } catch (error) {
+      console.error('Error fetching blogs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredPosts = blogPosts.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
+                         post.excerpt?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || post.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
+  const recentPosts = blogPosts.slice(0, 3);
   const featuredPost = filteredPosts.length > 0 ? filteredPosts[0] : null;
   const remainingPosts = filteredPosts.length > 1 ? filteredPosts.slice(1) : [];
+
+  // Extract unique categories from blogs
+  const categories = Array.from(new Set(blogPosts.map(post => post.category).filter(Boolean)));
+  
+  const formatDate = (date: Date | string) => {
+    const d = new Date(date);
+    return d.toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
 
   return (
     <main className="min-h-screen bg-[#fcfdfa] pb-0">
@@ -67,13 +106,20 @@ export default function BlogsPage() {
           {/* Main Content Area */}
           <div className="lg:col-span-8 space-y-16">
             
+            {/* Loading State */}
+            {loading && (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 text-brand-green animate-spin" />
+              </div>
+            )}
+
             {/* Featured Post (First one) */}
-            {featuredPost ? (
+            {!loading && featuredPost ? (
               <article className="relative bg-white rounded-[3.5rem] overflow-hidden shadow-2xl shadow-brand-green/5 border border-emerald-50 group">
-                <Link href={`/blogs/${featuredPost.id}`}>
+                <Link href={`/blogs/${featuredPost.slug}`}>
                   <div className="relative h-[400px] md:h-[500px]">
                     <Image 
-                      src={featuredPost.image} 
+                      src={featuredPost.featuredImage || 'https://picsum.photos/seed/blog/800/600'} 
                       alt={featuredPost.title}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-1000"
@@ -88,14 +134,14 @@ export default function BlogsPage() {
                          {featuredPost.title}
                        </h2>
                        <div className="flex items-center gap-6 text-white/70 text-xs font-bold italic">
-                          <span className="flex items-center gap-1.5"><Calendar size={14} /> {featuredPost.date}</span>
+                          <span className="flex items-center gap-1.5"><Calendar size={14} /> {formatDate(featuredPost.publishedAt || featuredPost.createdAt)}</span>
                           <span className="flex items-center gap-1.5"><User size={14} /> {featuredPost.author}</span>
                        </div>
                     </div>
                   </div>
                 </Link>
               </article>
-            ) : (
+            ) : !loading && (
               <div className="py-20 text-center bg-white rounded-[3.5rem] border border-dashed border-slate-200">
                 <p className="text-slate-400 italic">কোনো পোস্ট পাওয়া যায়নি।</p>
               </div>
@@ -105,36 +151,36 @@ export default function BlogsPage() {
             <div className="grid md:grid-cols-2 gap-10">
               {remainingPosts.map((post) => (
                 <motion.article 
-                  key={post.id}
+                  key={post._id}
                   whileHover={{ y: -8 }}
                   className="bg-white rounded-[3rem] overflow-hidden border border-emerald-50 shadow-sm hover:shadow-xl transition-all group flex flex-col"
                 >
                   <div className="relative h-60 overflow-hidden">
                     <Image 
-                      src={post.image} 
+                      src={post.featuredImage || 'https://picsum.photos/seed/blog/800/600'} 
                       alt={post.title} 
                       fill
                       className="object-cover group-hover:scale-110 transition-transform duration-700"
                       referrerPolicy="no-referrer"
                     />
-                    <div className="absolute top-5 left-5 bg-white/90 backdrop-blur-md text-brand-green-dark text-[10px] font-black uppercase px-4 py-1.5 rounded-xl border border-emerald-100 italic">
-                      {post.category}
-                    </div>
+                    {post.category && (
+                      <div className="absolute top-5 left-5 bg-white/90 backdrop-blur-md text-brand-green-dark text-[10px] font-black uppercase px-4 py-1.5 rounded-xl border border-emerald-100 italic">
+                        {post.category}
+                      </div>
+                    )}
                   </div>
                   <div className="p-8 space-y-4 flex-1 flex flex-col">
                     <div className="flex items-center gap-4 text-slate-400 text-[10px] font-black uppercase tracking-widest italic">
-                      <span>{post.date}</span>
-                      <span className="w-1 h-1 bg-slate-300 rounded-full" />
-                      <span>{post.readTime} Read</span>
+                      <span>{formatDate(post.publishedAt || post.createdAt)}</span>
                     </div>
                     <h3 className="text-xl font-black text-brand-green-dark group-hover:text-brand-green transition-colors leading-tight italic">
                       {post.title}
                     </h3>
                     <p className="text-slate-500 text-sm italic leading-relaxed line-clamp-3">
-                      {post.excerpt}
+                      {post.excerpt || post.title}
                     </p>
                     <div className="pt-4 mt-auto">
-                      <Link href={`/blogs/${post.id}`} className="flex items-center gap-2 text-brand-green font-black text-xs uppercase tracking-widest group/btn hover:underline underline-offset-4">
+                      <Link href={`/blogs/${post.slug}`} className="flex items-center gap-2 text-brand-green font-black text-xs uppercase tracking-widest group/btn hover:underline underline-offset-4">
                         বিস্তারিত পড়ুন <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
                       </Link>
                     </div>
@@ -190,18 +236,18 @@ export default function BlogsPage() {
                       {blogPosts.length}
                     </span>
                   </button>
-                  {blogCategories.map((cat, i) => (
+                  {categories.map((cat, i) => (
                     <button 
                       key={i} 
-                      onClick={() => setSelectedCategory(cat.name)}
-                      className={`w-full flex items-center justify-between group py-1 transition-colors ${selectedCategory === cat.name ? 'text-brand-green' : 'text-slate-500'}`}
+                      onClick={() => setSelectedCategory(cat as string)}
+                      className={`w-full flex items-center justify-between group py-1 transition-colors ${selectedCategory === cat ? 'text-brand-green' : 'text-slate-500'}`}
                     >
                       <span className="font-bold italic flex items-center gap-2">
-                        <ChevronRight size={14} className={`transition-transform ${selectedCategory === cat.name ? 'translate-x-1' : ''}`} />
-                        {cat.name}
+                        <ChevronRight size={14} className={`transition-transform ${selectedCategory === cat ? 'translate-x-1' : ''}`} />
+                        {cat}
                       </span>
                       <span className="bg-emerald-50 text-brand-green font-black text-[10px] w-8 h-6 rounded-lg flex items-center justify-center">
-                        {blogPosts.filter(p => p.category === cat.name).length || cat.count}
+                        {blogPosts.filter(p => p.category === cat).length}
                       </span>
                     </button>
                   ))}
@@ -215,13 +261,13 @@ export default function BlogsPage() {
                </h4>
                <div className="space-y-6">
                   {recentPosts.map((post) => (
-                    <Link key={post.id} href={`/blogs/${post.id}`} className="flex gap-4 group items-center">
+                    <Link key={post._id} href={`/blogs/${post.slug}`} className="flex gap-4 group items-center">
                       <div className="relative w-20 h-20 flex-shrink-0 rounded-2xl overflow-hidden shadow-sm">
-                        <Image src={post.image} alt={post.title} fill className="object-cover group-hover:scale-110 transition-all" referrerPolicy="no-referrer" />
+                        <Image src={post.featuredImage || 'https://picsum.photos/seed/blog/200/200'} alt={post.title} fill className="object-cover group-hover:scale-110 transition-all" referrerPolicy="no-referrer" />
                       </div>
                       <div className="space-y-1">
                         <h5 className="font-black text-sm text-brand-green-dark line-clamp-2 leading-snug group-hover:text-brand-green transition-colors italic">{post.title}</h5>
-                        <p className="text-[#94a3b8] text-[10px] font-black uppercase tracking-widest">{post.date}</p>
+                        <p className="text-[#94a3b8] text-[10px] font-black uppercase tracking-widest">{formatDate(post.publishedAt || post.createdAt)}</p>
                       </div>
                     </Link>
                   ))}
@@ -258,11 +304,14 @@ export default function BlogsPage() {
                  <Tag size={20} className="text-brand-green" /> ট্যাগ্স
                </h4>
                <div className="flex flex-wrap gap-2">
-                  {['খাঁটি মধু', 'অর্গানিক', 'স্বাস্থ্য', 'ঘি', 'শরবত', 'রান্না', 'টিপস', 'প্রাকৃতিক', 'ব্যায়াম'].map((tag, i) => (
+                  {Array.from(new Set(blogPosts.flatMap(post => post.tags || []))).slice(0, 9).map((tag, i) => (
                     <Link key={i} href="#" className="px-4 py-2 bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-slate-100 hover:border-brand-green hover:text-brand-green transition-all">
                       #{tag}
                     </Link>
                   ))}
+                  {blogPosts.length === 0 && (
+                    <span className="text-slate-400 text-sm italic">কোনো ট্যাগ নেই</span>
+                  )}
                </div>
             </div>
 

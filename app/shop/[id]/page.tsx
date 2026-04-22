@@ -31,6 +31,18 @@ const relatedProducts = [
   { _id: '104', name: 'অর্গানিক বাদাম মিক্স', price: 550, image: 'https://picsum.photos/seed/nuts2/400/400' },
 ];
 
+// Category-wise variants mapping
+const categoryVariants: Record<string, string[]> = {
+  'Honey': ['২৫০ গ্রাম', '৫০০ গ্রাম', '১ কেজি', '২ কেজি'],
+  'Oil': ['৫০০ মিলি', '১ লিটার', '২ লিটার', '৫ লিটার'],
+  'Ghee': ['৫০০ গ্রাম', '১ কেজি', '২ কেজি', '৫ কেজি'],
+  'Spice': ['১০০ গ্রাম', '২৫০ গ্রাম', '৫০০ গ্রাম', '১ কেজি'],
+  'Dry Fruits': ['২৫০ গ্রাম', '৫০০ গ্রাম', '১ কেজি'],
+  'Food': ['৫০০ গ্রাম', '১ কেজি', '২ কেজি'],
+  'Beverage': ['১ লিটার', '২ লিটার', '৫ লিটার'],
+  'default': ['Regular', '৫০০ গ্রাম', '১ কেজি']
+};
+
 export default function SingleProductPage() {
   const params = useParams();
   const router = useRouter();
@@ -57,6 +69,11 @@ export default function SingleProductPage() {
   // Derive full product details from base product data
   const product = useMemo(() => {
     if (!baseProduct) return null;
+    
+    // Get category-wise variants
+    const category = baseProduct.category || 'default';
+    const variants = categoryVariants[category] || categoryVariants['default'];
+    
     return {
       ...baseProduct,
       id: baseProduct._id || baseProduct.id,
@@ -68,7 +85,7 @@ export default function SingleProductPage() {
         'স্বাস্থ্যসম্মত উপায়ে প্যাকেটজাত',
         'পারফেক্ট স্বাদের নিশ্চয়তা'
       ],
-      variants: [baseProduct.weight || 'Regular', '৫০০ গ্রাম', '১ কেজি'],
+      variants: variants,
       images: (baseProduct.images && baseProduct.images.length > 0) 
         ? baseProduct.images 
         : (baseProduct.image 

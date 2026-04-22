@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/lib/CartContext';
@@ -35,6 +35,8 @@ export default function CheckoutPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [discount, setDiscount] = useState(0);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [settings, setSettings] = useState<any>(null);
+  const [settingsLoading, setSettingsLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -44,6 +46,9 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
+    // Fetch settings
+    fetchSettings();
+
     // Check if customer is logged in
     const storedCustomer = localStorage.getItem('customer');
     if (storedCustomer) {
@@ -63,6 +68,19 @@ export default function CheckoutPage() {
       localStorage.removeItem('pendingCoupon');
     }
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      setSettingsLoading(true);
+      const res = await fetch('/api/settings');
+      const data = await res.json();
+      setSettings(data.settings);
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -123,8 +141,20 @@ export default function CheckoutPage() {
     toast.success('কুপন সরানো হয়েছে');
   };
 
-  const shipping = (formData.city === 'Dhaka' || subtotal >= 10000) ? 0 : 60;
-  const total = subtotal + shipping - discount;
+  // Calculate shipping based on settings and free shipping threshold
+  const { shipping, total, shippingCostInsideDhaka, shippingCostOutsideDhaka, freeShippingThreshold, isFreeShipping } = useMemo(() => {
+    const shippingCostInsideDhaka = settings?.shippingCostInsideDhaka || 60;
+    const shippingCostOutsideDhaka = settings?.shippingCostOutsideDhaka || 150;
+    const freeShippingThreshold = settings?.freeShippingThreshold || 5000;
+
+    const isInsideDhaka = formData.city === 'Dhaka';
+    const isFreeShipping = subtotal >= freeShippingThreshold;
+
+    const shipping = isFreeShipping ? 0 : (isInsideDhaka ? shippingCostInsideDhaka : shippingCostOutsideDhaka);
+    const total = subtotal + shipping - discount;
+
+    return { shipping, total, shippingCostInsideDhaka, shippingCostOutsideDhaka, freeShippingThreshold, isFreeShipping };
+  }, [settings, formData.city, subtotal, discount]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -748,6 +778,14 @@ export default function CheckoutPage() {
                       <div className="bg-white/5 p-3 rounded-2xl flex items-center gap-2">
                          <Truck size={14} className="text-emerald-400" />
                          <p className="text-[9px] text-emerald-100 font-black italic">ফ্রি ডেলিভারি প্রযোজ্য হয়েছে!</p>
+                      </div>
+                    )}
+                    {shipping > 0 && subtotal < freeShippingThreshold && (
+                      <div className="bg-white/5 p-3 rounded-2xl flex items-center gap-2">
+                         <Truck size={14} className="text-emerald-400" />
+                         <p className="text-[9px] text-emerald-100 font-black italic">
+                           ৳{freeShippingThreshold - subtotal} এর ওপর অর্ডার করলে ফ্রি ডেলিভারি!
+                         </p>
                       </div>
                     )}
                     <div className="pt-6 border-t border-white/10 flex justify-between items-end">

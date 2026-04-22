@@ -381,15 +381,28 @@ export default function AdminSettings() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Shipping Cost
+                Shipping Cost (Inside Dhaka)
               </label>
               <input
                 type="number"
                 step="0.01"
-                value={settings?.shippingCost || 0}
-                onChange={(e) => setSettings({ ...settings, shippingCost: parseFloat(e.target.value) || 0 })}
+                value={settings?.shippingCostInsideDhaka || 0}
+                onChange={(e) => setSettings({ ...settings, shippingCostInsideDhaka: parseFloat(e.target.value) || 0 })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="60"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Shipping Cost (Outside Dhaka)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={settings?.shippingCostOutsideDhaka || 0}
+                onChange={(e) => setSettings({ ...settings, shippingCostOutsideDhaka: parseFloat(e.target.value) || 0 })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="150"
               />
             </div>
             <div className="md:col-span-2">

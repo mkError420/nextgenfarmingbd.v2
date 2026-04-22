@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Package,
@@ -25,23 +25,36 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    fetchUnreadCount();
-    // Poll for new messages every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
+    // Check authentication
+    const admin = localStorage.getItem('admin');
+    if (!admin && pathname !== '/admin/login') {
+      router.push('/admin/login');
+    } else {
+      setIsAuthenticated(true);
+    }
 
-    // Listen for custom event to refresh count
-    const handleRefresh = () => fetchUnreadCount();
-    window.addEventListener('refreshUnreadCount', handleRefresh);
+    // Only fetch unread count if authenticated
+    if (admin) {
+      fetchUnreadCount();
+      // Poll for new messages every 30 seconds
+      const interval = setInterval(fetchUnreadCount, 30000);
 
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('refreshUnreadCount', handleRefresh);
-    };
-  }, []);
+      // Listen for custom event to refresh count
+      const handleRefresh = () => fetchUnreadCount();
+      window.addEventListener('refreshUnreadCount', handleRefresh);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('refreshUnreadCount', handleRefresh);
+      };
+    }
+  }, [pathname, router]);
 
   const fetchUnreadCount = async () => {
     try {
@@ -67,9 +80,19 @@ export default function AdminLayout({
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    window.location.href = '/';
+    localStorage.removeItem('admin');
+    router.push('/admin/login');
   };
+
+  // Don't render if checking authentication or on login page
+  if (!isAuthenticated && pathname !== '/admin/login') {
+    return null;
+  }
+
+  // Don't apply admin layout to login page
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">

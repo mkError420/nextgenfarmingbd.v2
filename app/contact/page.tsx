@@ -9,10 +9,6 @@ import toast from 'react-hot-toast';
 
 const faqs = [
   {
-    question: 'আপনাদের ডেলিভারি চার্জ কত?',
-    answer: 'ঢাকার ভেতরে ডেলিভারি চার্জ ৬০ টাকা এবং ঢাকার বাইরে ১৫০ টাকা। তবে ৫০০০ টাকার বেশি অর্ডারে ডেলিভারি চার্জ সম্পূর্ণ ফ্রি!'
-  },
-  {
     question: 'পণ্য পছন্দ না হলে কি রিটার্ন করা যাবে?',
     answer: 'অবশ্যই! আমাদের প্রতিটি পণ্যে ১০০% ক্যাশব্যাক গ্যারান্টি আছে। যদি আপনি গুণগত মান নিয়ে অসন্তুষ্ট হন, তবে পণ্য পাওয়ার ৩ দিনের মধ্যে আমাদের জানালে আমরা টাকা ফেরত দেব।'
   },
@@ -51,6 +47,14 @@ export default function ContactPage() {
       console.error('Error fetching settings:', error);
     }
   };
+
+  // Dynamic shipping FAQ
+  const shippingFaq = {
+    question: 'আপনাদের ডেলিভারি চার্জ কত?',
+    answer: `ঢাকার ভেতরে ডেলিভারি চার্জ ৳${settings?.shippingCostInsideDhaka || 60} টাকা এবং ঢাকার বাইরে ৳${settings?.shippingCostOutsideDhaka || 150} টাকা। তবে ৳${settings?.freeShippingThreshold || 5000} টাকার বেশি অর্ডারে ডেলিভারি চার্জ সম্পূর্ণ ফ্রি!`
+  };
+
+  const allFaqs = settings ? [shippingFaq, ...faqs] : faqs;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -332,7 +336,7 @@ export default function ContactPage() {
           </div>
 
           <div className="space-y-3 md:space-y-4">
-            {faqs.map((faq, i) => (
+            {allFaqs.map((faq, i) => (
               <div key={i} className="border border-slate-100 rounded-2xl md:rounded-3xl overflow-hidden bg-[#fafbfc]">
                 <button
                   onClick={() => setActiveFaq(activeFaq === i ? null : i)}

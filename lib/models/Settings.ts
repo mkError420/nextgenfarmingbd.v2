@@ -17,7 +17,8 @@ export interface ISettings extends Document {
   currency: string;
   currencySymbol: string;
   taxRate?: number;
-  shippingCost?: number;
+  shippingCostInsideDhaka?: number;
+  shippingCostOutsideDhaka?: number;
   freeShippingThreshold?: number;
   maintenanceMode: boolean;
   maintenanceMessage?: string;
@@ -90,13 +91,17 @@ const SettingsSchema = new Schema<ISettings>(
       type: Number,
       default: 0
     },
-    shippingCost: {
+    shippingCostInsideDhaka: {
       type: Number,
       default: 60
     },
+    shippingCostOutsideDhaka: {
+      type: Number,
+      default: 150
+    },
     freeShippingThreshold: {
       type: Number,
-      default: 1500
+      default: 5000
     },
     maintenanceMode: {
       type: Boolean,

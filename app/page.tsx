@@ -184,7 +184,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="relative z-10 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               {products.slice(0, 4).map((product: any) => (
                 <div key={product._id} className="relative group">
                   <ProductCard product={product} />
@@ -288,7 +288,7 @@ export default function Home() {
                     </Link>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                     {products
                       .filter((p: any) => p.category === cat.name_en)
                       .slice(0, 3)

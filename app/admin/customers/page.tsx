@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, User, Phone, Mail, Calendar, MapPin, ShoppingBag, Eye } from 'lucide-react';
+import { Search, User, Phone, Mail, Calendar, MapPin, ShoppingBag, Eye, Plus, Trash2, X, Edit } from 'lucide-react';
 
 export default function AdminCustomers() {
   const [customers, setCustomers] = useState([]);
@@ -9,7 +9,17 @@ export default function AdminCustomers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [customerOrders, setCustomerOrders] = useState([]);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    isActive: true
+  });
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchCustomers();
@@ -50,14 +60,101 @@ export default function AdminCustomers() {
     }
   };
 
+  const handleCreateCustomer = () => {
+    setFormData({
+      name: '',
+      phone: '',
+      email: '',
+      isActive: true
+    });
+    setIsEditMode(false);
+    setIsFormModalOpen(true);
+  };
+
+  const handleEditCustomer = (customer: any) => {
+    setFormData({
+      name: customer.name,
+      phone: customer.phone,
+      email: customer.email || '',
+      isActive: customer.isActive
+    });
+    setSelectedCustomer(customer);
+    setIsEditMode(true);
+    setIsFormModalOpen(true);
+  };
+
+  const handleSaveCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const url = isEditMode 
+        ? `/api/admin/customers?id=${selectedCustomer._id}`
+        : '/api/admin/customers';
+      
+      const method = isEditMode ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        setIsFormModalOpen(false);
+        setSelectedCustomer(null);
+        fetchCustomers();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to save customer');
+      }
+    } catch (error) {
+      console.error('Error saving customer:', error);
+      alert('Failed to save customer');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteCustomer = async (customer: any) => {
+    if (!confirm(`Are you sure you want to delete ${customer.name}?`)) return;
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/admin/customers?id=${customer._id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        fetchCustomers();
+      } else {
+        alert('Failed to delete customer');
+      }
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      alert('Failed to delete customer');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8">Loading...</div>;
   }
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
+        <button
+          onClick={handleCreateCustomer}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-5 h-5" />
+          Add Customer
+        </button>
       </div>
 
       {/* Search */}
@@ -130,13 +227,30 @@ export default function AdminCustomers() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => handleViewCustomer(customer)}
-                      className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
-                    >
-                      <Eye className="w-4 h-4" />
-                      View
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleViewCustomer(customer)}
+                        className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
+                      >
+                        <Eye className="w-4 h-4" />
+                        View
+                      </button>
+                      <button
+                        onClick={() => handleEditCustomer(customer)}
+                        className="text-green-600 hover:text-green-900 flex items-center gap-1"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCustomer(customer)}
+                        disabled={deleting}
+                        className="text-red-600 hover:text-red-900 flex items-center gap-1 disabled:opacity-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -265,6 +379,107 @@ export default function AdminCustomers() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Customer Form Modal */}
+      {isFormModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">
+                {isEditMode ? 'Edit Customer' : 'Add Customer'}
+              </h2>
+              <button
+                onClick={() => {
+                  setIsFormModalOpen(false);
+                  setSelectedCustomer(null);
+                  setFormData({
+                    name: '',
+                    phone: '',
+                    email: '',
+                    isActive: true
+                  });
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCustomer} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+                  Active
+                </label>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : (isEditMode ? 'Update' : 'Create')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsFormModalOpen(false);
+                    setSelectedCustomer(null);
+                    setFormData({
+                      name: '',
+                      phone: '',
+                      email: '',
+                      isActive: true
+                    });
+                  }}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

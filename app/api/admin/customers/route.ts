@@ -50,3 +50,101 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch customers' }, { status: 500 });
   }
 }
+
+export async function POST(request: NextRequest) {
+  try {
+    await mongoose.connect(MONGODB_URI);
+    
+    const customerData = await request.json();
+    
+    // Validate required fields
+    if (!customerData.name || !customerData.phone) {
+      return NextResponse.json({ error: 'Name and phone are required' }, { status: 400 });
+    }
+
+    // Check if phone already exists
+    const existingUser = await User.findOne({ phone: customerData.phone });
+    if (existingUser) {
+      return NextResponse.json({ error: 'Phone number already exists' }, { status: 400 });
+    }
+
+    // Create new customer
+    const customer = new User({
+      name: customerData.name,
+      phone: customerData.phone,
+      email: customerData.email || '',
+      role: 'user',
+      isActive: true,
+      addresses: customerData.addresses || [],
+    });
+
+    await customer.save();
+    
+    return NextResponse.json(customer, { status: 201 });
+  } catch (error: any) {
+    console.error('Error creating customer:', error);
+    return NextResponse.json({ error: 'Failed to create customer', details: error.message }, { status: 500 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    await mongoose.connect(MONGODB_URI);
+    
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Customer ID is required' }, { status: 400 });
+    }
+    
+    const updateData = await request.json();
+    
+    // If phone is being updated, check if it already exists
+    if (updateData.phone) {
+      const existingUser = await User.findOne({ phone: updateData.phone, _id: { $ne: id } });
+      if (existingUser) {
+        return NextResponse.json({ error: 'Phone number already exists' }, { status: 400 });
+      }
+    }
+    
+    const customer = await User.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+    
+    if (!customer) {
+      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+    }
+    
+    return NextResponse.json(customer);
+  } catch (error: any) {
+    console.error('Error updating customer:', error);
+    return NextResponse.json({ error: 'Failed to update customer', details: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    await mongoose.connect(MONGODB_URI);
+    
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Customer ID is required' }, { status: 400 });
+    }
+    
+    const customer = await User.findByIdAndDelete(id);
+    
+    if (!customer) {
+      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+    }
+    
+    return NextResponse.json({ message: 'Customer deleted successfully' });
+  } catch (error: any) {
+    console.error('Error deleting customer:', error);
+    return NextResponse.json({ error: 'Failed to delete customer', details: error.message }, { status: 500 });
+  }
+}

@@ -409,6 +409,12 @@ export default function CheckoutPage() {
                     <Download size={20} />
                     রসিদ ডাউনলোড করুন
                  </button>
+                 {customer && (
+                   <Link href="/customer-dashboard" className="flex items-center justify-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-2xl font-black italic shadow-lg shadow-blue-600/10 hover:bg-blue-700 transition-all">
+                      <User size={20} />
+                      ড্যাশবোর্ডে যান
+                   </Link>
+                 )}
                  <Link href="/shop" className="bg-brand-green text-white px-8 py-4 rounded-2xl font-black italic shadow-lg shadow-brand-green/10 hover:bg-brand-green-dark transition-all">শপিং চালিয়ে যান</Link>
                  <Link href="/" className="bg-slate-100 text-slate-600 px-8 py-4 rounded-2xl font-black italic hover:bg-slate-200 transition-all">হোম পেজ</Link>
               </div>

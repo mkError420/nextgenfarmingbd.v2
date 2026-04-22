@@ -31,23 +31,12 @@ const relatedProducts = [
   { _id: '104', name: 'অর্গানিক বাদাম মিক্স', price: 550, image: 'https://picsum.photos/seed/nuts2/400/400' },
 ];
 
-// Category-wise variants mapping
-const categoryVariants: Record<string, string[]> = {
-  'Honey': ['২৫০ গ্রাম', '৫০০ গ্রাম', '১ কেজি', '২ কেজি'],
-  'Oil': ['৫০০ মিলি', '১ লিটার', '২ লিটার', '৫ লিটার'],
-  'Ghee': ['৫০০ গ্রাম', '১ কেজি', '২ কেজি', '৫ কেজি'],
-  'Spice': ['১০০ গ্রাম', '২৫০ গ্রাম', '৫০০ গ্রাম', '১ কেজি'],
-  'Dry Fruits': ['২৫০ গ্রাম', '৫০০ গ্রাম', '১ কেজি'],
-  'Food': ['৫০০ গ্রাম', '১ কেজি', '২ কেজি'],
-  'Beverage': ['১ লিটার', '২ লিটার', '৫ লিটার'],
-  'default': ['Regular', '৫০০ গ্রাম', '১ কেজি']
-};
-
 export default function SingleProductPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
   const [baseProduct, setBaseProduct] = useState<any>(null);
+  const [categoryVariants, setCategoryVariants] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,6 +48,15 @@ export default function SingleProductPage() {
       const res = await fetch(`/api/products?id=${id}`);
       const data = await res.json();
       setBaseProduct(data.product || data);
+      
+      // Fetch category variants
+      if (data.product?.category) {
+        const categoryRes = await fetch(`/api/categories?name_en=${encodeURIComponent(data.product.category)}`);
+        const categoryData = await categoryRes.json();
+        if (categoryData.category?.variants && categoryData.category.variants.length > 0) {
+          setCategoryVariants(categoryData.category.variants);
+        }
+      }
     } catch (error) {
       console.error('Error fetching product:', error);
     } finally {
@@ -69,10 +67,6 @@ export default function SingleProductPage() {
   // Derive full product details from base product data
   const product = useMemo(() => {
     if (!baseProduct) return null;
-    
-    // Get category-wise variants
-    const category = baseProduct.category || 'default';
-    const variants = categoryVariants[category] || categoryVariants['default'];
     
     return {
       ...baseProduct,
@@ -85,7 +79,7 @@ export default function SingleProductPage() {
         'স্বাস্থ্যসম্মত উপায়ে প্যাকেটজাত',
         'পারফেক্ট স্বাদের নিশ্চয়তা'
       ],
-      variants: variants,
+      variants: categoryVariants.length > 0 ? categoryVariants : [baseProduct.weight || 'Regular', '৫০০ গ্রাম', '১ কেজি'],
       images: (baseProduct.images && baseProduct.images.length > 0) 
         ? baseProduct.images 
         : (baseProduct.image 
@@ -102,7 +96,7 @@ export default function SingleProductPage() {
       details: baseProduct.details || '',
       deliveryInfo: 'ঢাকার ভেতরে অথবা ১০০০০ টাকার উপরে কেনাকাটায় ফ্রি ডেলিভারি! ঢাকার ভেতরে ২৪-৪৮ ঘণ্টা এবং ঢাকার বাইরে ৩-৫ কার্যদিবসের মধ্যে কুরিয়ারের মাধ্যমে আমরা পণ্য প্রতিটি জেলায় পৌঁছে দিয়ে থাকি।'
     };
-  }, [baseProduct]);
+  }, [baseProduct, categoryVariants]);
 
   const [mainImage, setMainImage] = useState('');
   const [quantity, setQuantity] = useState(1);

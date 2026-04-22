@@ -104,13 +104,23 @@ export default function AdminCategories() {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-1">{category.name}</h3>
               <p className="text-sm text-gray-500 mb-3">{category.name_en}</p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 mb-3">
                 {category.subcategories?.map((sub: string, index: number) => (
                   <span
                     key={index}
                     className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
                   >
                     {sub}
+                  </span>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {category.variants?.map((variant: string, index: number) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded"
+                  >
+                    {variant}
                   </span>
                 ))}
               </div>

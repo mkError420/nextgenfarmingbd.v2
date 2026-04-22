@@ -10,10 +10,20 @@ export async function GET(request: NextRequest) {
     
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const name_en = searchParams.get('name_en');
 
     if (id) {
       // Get single category by ID
       const category = await Category.findById(id);
+      if (!category) {
+        return NextResponse.json({ error: 'Category not found' }, { status: 404 });
+      }
+      return NextResponse.json({ category });
+    }
+
+    if (name_en) {
+      // Get single category by name_en
+      const category = await Category.findOne({ name_en });
       if (!category) {
         return NextResponse.json({ error: 'Category not found' }, { status: 404 });
       }

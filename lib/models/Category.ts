@@ -5,6 +5,7 @@ export interface ICategory extends Document {
   name_en: string;
   icon: string;
   subcategories: string[];
+  variants: string[];
   description?: string;
   isActive: boolean;
   createdAt: Date;
@@ -29,6 +30,10 @@ const CategorySchema: Schema = new Schema({
     required: true,
   },
   subcategories: [{
+    type: String,
+    trim: true,
+  }],
+  variants: [{
     type: String,
     trim: true,
   }],

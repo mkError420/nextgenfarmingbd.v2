@@ -1,13 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Check } from 'lucide-react';
+import Image from 'next/image';
 
 export default function NewDeal() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     title: '',
     title_en: '',
@@ -15,8 +20,6 @@ export default function NewDeal() {
     description_en: '',
     discountType: 'percentage' as 'percentage' | 'fixed' | 'buy_x_get_y',
     discountValue: '',
-    products: '',
-    categories: '',
     startDate: '',
     endDate: '',
     minOrderValue: '',
@@ -24,6 +27,47 @@ export default function NewDeal() {
     code: '',
     isActive: true,
   });
+
+  useEffect(() => {
+    fetchCategories();
+    fetchProducts();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/categories');
+      const data = await res.json();
+      setCategories(data.categories || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('/api/products?limit=100');
+      const data = await res.json();
+      setProducts(data.products || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  };
+
+  const toggleCategory = (categoryName: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(categoryName) 
+        ? prev.filter(c => c !== categoryName)
+        : [...prev, categoryName]
+    );
+  };
+
+  const toggleProduct = (productId: string) => {
+    setSelectedProducts(prev => 
+      prev.includes(productId) 
+        ? prev.filter(p => p !== productId)
+        : [...prev, productId]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +80,8 @@ export default function NewDeal() {
         body: JSON.stringify({
           ...formData,
           discountValue: parseFloat(formData.discountValue),
-          products: formData.products ? formData.products.split(',').map(p => p.trim()) : [],
-          categories: formData.categories ? formData.categories.split(',').map(c => c.trim()) : [],
+          products: selectedProducts,
+          categories: selectedCategories,
           startDate: new Date(formData.startDate),
           endDate: new Date(formData.endDate),
           minOrderValue: formData.minOrderValue ? parseFloat(formData.minOrderValue) : undefined,
@@ -200,28 +244,69 @@ export default function NewDeal() {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Product IDs (comma-separated)
+                Products
               </label>
-              <input
-                type="text"
-                value={formData.products}
-                onChange={(e) => setFormData({ ...formData, products: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="id1, id2, id3"
-              />
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-60 overflow-y-auto p-2 border border-gray-200 rounded-lg">
+                {products.map((product) => (
+                  <button
+                    key={product._id}
+                    type="button"
+                    onClick={() => toggleProduct(product._id)}
+                    className={`relative rounded-lg overflow-hidden border-2 transition-all ${
+                      selectedProducts.includes(product._id)
+                        ? 'border-green-500 ring-2 ring-green-200'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="aspect-square relative">
+                      {product.images && product.images[0] ? (
+                        <img
+                          src={product.images[0]}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                          <span className="text-xs text-gray-400">No image</span>
+                        </div>
+                      )}
+                      {selectedProducts.includes(product._id) && (
+                        <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full p-1">
+                          <Check className="w-3 h-3" />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs font-medium text-gray-700 truncate px-1 py-1">{product.name}</p>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Categories (comma-separated)
+                Categories
               </label>
-              <input
-                type="text"
-                value={formData.categories}
-                onChange={(e) => setFormData({ ...formData, categories: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Vegetables, Fruits, Dairy"
-              />
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {categories.map((category) => (
+                  <button
+                    key={category._id}
+                    type="button"
+                    onClick={() => toggleCategory(category.name)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all ${
+                      selectedCategories.includes(category.name)
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="text-lg">{category.icon}</span>
+                    <span className="text-sm font-medium">{category.name}</span>
+                    {selectedCategories.includes(category.name) && (
+                      <Check className="w-4 h-4 ml-auto" />
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

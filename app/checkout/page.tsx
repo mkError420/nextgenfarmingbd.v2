@@ -15,7 +15,9 @@ import {
   Phone, 
   User,
   ShoppingBag,
-  Download
+  Download,
+  Tag,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
@@ -29,6 +31,10 @@ export default function CheckoutPage() {
   const [isOrdered, setIsOrdered] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<any>(null);
   const [customer, setCustomer] = useState<any>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [discount, setDiscount] = useState(0);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -49,10 +55,76 @@ export default function CheckoutPage() {
         phone: parsedCustomer.phone || ''
       }));
     }
+
+    // Check for pending coupon from deals page
+    const pendingCoupon = localStorage.getItem('pendingCoupon');
+    if (pendingCoupon) {
+      setCouponCode(pendingCoupon);
+      localStorage.removeItem('pendingCoupon');
+    }
   }, []);
 
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast.error('কুপন কোড লিখুন');
+      return;
+    }
+
+    setValidatingCoupon(true);
+    try {
+      const res = await fetch('/api/deals');
+      const data = await res.json();
+      const deals = data.deals || [];
+
+      const validDeal = deals.find((deal: any) =>
+        deal.code?.toUpperCase() === couponCode.toUpperCase() &&
+        new Date(deal.startDate) <= new Date() &&
+        new Date(deal.endDate) >= new Date()
+      );
+
+      if (validDeal) {
+        // Check minimum order value
+        if (validDeal.minOrderValue && subtotal < validDeal.minOrderValue) {
+          toast.error(`মিনিমাম অর্ডার ভ্যালু ৳${validDeal.minOrderValue} প্রয়োজন`);
+          return;
+        }
+
+        // Calculate discount
+        let discountAmount = 0;
+        if (validDeal.discountType === 'percentage') {
+          discountAmount = (subtotal * validDeal.discountValue) / 100;
+        } else if (validDeal.discountType === 'fixed') {
+          discountAmount = validDeal.discountValue;
+        }
+
+        // Check if discount exceeds subtotal
+        if (discountAmount > subtotal) {
+          discountAmount = subtotal;
+        }
+
+        setAppliedCoupon(validDeal);
+        setDiscount(discountAmount);
+        toast.success('কুপন সফলভাবে প্রয়োগ করা হয়েছে!');
+      } else {
+        toast.error('অবৈধ কুপন কোড');
+      }
+    } catch (error) {
+      console.error('Error validating coupon:', error);
+      toast.error('কুপন যাচাই করতে সমস্যা হয়েছে');
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setCouponCode('');
+    setAppliedCoupon(null);
+    setDiscount(0);
+    toast.success('কুপন সরানো হয়েছে');
+  };
+
   const shipping = (formData.city === 'Dhaka' || subtotal >= 10000) ? 0 : 60;
-  const total = subtotal + shipping;
+  const total = subtotal + shipping - discount;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -328,6 +400,8 @@ export default function CheckoutPage() {
           image: item.image || '' // Handle empty images
         })),
         totalAmount: total,
+        discountAmount: discount,
+        couponCode: appliedCoupon?.code || '',
         shippingAddress: {
           street: formData.address,
           city: formData.city,
@@ -614,10 +688,58 @@ export default function CheckoutPage() {
                  </div>
 
                  <div className="space-y-6 pt-6 border-t border-white/10">
+                    {/* Coupon Section */}
+                    <div className="space-y-3">
+                       {!appliedCoupon ? (
+                          <div className="flex gap-2">
+                             <input
+                               type="text"
+                               value={couponCode}
+                               onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                               placeholder="কুপন কোড লিখুন"
+                               className="flex-1 bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-emerald-400 outline-none transition-all font-bold"
+                             />
+                             <button
+                               type="button"
+                               onClick={handleApplyCoupon}
+                               disabled={validatingCoupon}
+                               className="bg-emerald-400 text-brand-green-dark px-6 py-3 rounded-2xl font-black text-sm hover:bg-emerald-300 transition-all disabled:opacity-50"
+                             >
+                               {validatingCoupon ? '...' : 'প্রয়োগ'}
+                             </button>
+                          </div>
+                       ) : (
+                          <div className="bg-emerald-400/20 border border-emerald-400/50 rounded-2xl p-4 flex items-center justify-between">
+                             <div className="flex items-center gap-3">
+                                <Tag size={18} className="text-emerald-400" />
+                                <div>
+                                  <p className="font-black text-emerald-400 text-sm">{appliedCoupon.code}</p>
+                                  <p className="text-xs text-emerald-200">
+                                    {appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountValue}%` : `৳${appliedCoupon.discountValue}`} ছাড়
+                                  </p>
+                                </div>
+                             </div>
+                             <button
+                               type="button"
+                               onClick={handleRemoveCoupon}
+                               className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                             >
+                                <X size={18} />
+                             </button>
+                          </div>
+                       )}
+                    </div>
+
                     <div className="flex justify-between items-center text-emerald-50/70 italic font-medium">
                        <span>সাব-টোটাল</span>
                        <span className="font-black text-white">৳{subtotal}</span>
                     </div>
+                    {discount > 0 && (
+                      <div className="flex justify-between items-center text-emerald-400 italic font-medium">
+                         <span>ছাড়</span>
+                         <span className="font-black">-৳{discount}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center text-emerald-50/70 italic font-medium">
                        <span>ডেলিভারি চার্জ</span>
                        <span className="font-black text-white">{shipping === 0 ? 'ফ্রি' : `৳${shipping}`}</span>

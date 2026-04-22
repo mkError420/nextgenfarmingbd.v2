@@ -151,7 +151,7 @@ export default function Hero() {
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
         
         {/* Left Side: Animated Carousel Banner */}
-        <div className="md:col-span-8 bg-slate-100 rounded-[2rem] overflow-hidden relative shadow-lg min-h-[300px] sm:min-h-[350px] md:min-h-[450px] lg:min-h-[500px] group">
+        <div className="md:col-span-8 bg-slate-100 overflow-hidden relative shadow-lg min-h-[250px] sm:min-h-[300px] md:min-h-[400px] lg:min-h-[450px] xl:min-h-[500px] group">
           {slides.length > 0 ? (
             <>
               <AnimatePresence initial={false}>

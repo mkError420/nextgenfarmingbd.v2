@@ -244,7 +244,7 @@ export default function Home() {
       <section className="py-16 bg-brand-bg">
         <div className="max-w-7xl mx-auto px-8">
           {/* Section Banner */}
-          <Link href={featuredBanner?.link || '/shop'} className="block w-full h-48 md:h-64 bg-brand-green-dark rounded-[2rem] md:rounded-[4rem] mb-16 relative overflow-hidden group">
+          <Link href={featuredBanner?.link || '/shop'} className="block w-full h-40 sm:h-48 md:h-56 lg:h-64 xl:h-72 bg-brand-green-dark mb-16 relative overflow-hidden group">
             {featuredBanner ? (
               <>
                 <div className="absolute inset-0">

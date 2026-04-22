@@ -117,31 +117,6 @@ export default function BannerCarousel() {
             referrerPolicy="no-referrer"
           />
         )}
-        
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        
-        {/* Banner Content */}
-        <div className="absolute bottom-0 left-0 right-0 p-8 md:p-16">
-          <div className="max-w-4xl">
-            <h2 className="text-3xl md:text-5xl font-black text-white italic mb-4">
-              {currentBanner.title}
-            </h2>
-            {currentBanner.description && (
-              <p className="text-white/80 text-lg italic mb-6">
-                {currentBanner.description}
-              </p>
-            )}
-            {currentBanner.link && (
-              <Link
-                href={currentBanner.link}
-                className="inline-block bg-brand-green text-white px-8 py-4 rounded-full font-black text-sm uppercase tracking-widest hover:bg-emerald-600 transition-colors"
-              >
-                আরও জানুন
-              </Link>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Navigation Arrows */}

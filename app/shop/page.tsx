@@ -134,7 +134,7 @@ function ShopContent() {
       
       {/* Premium Shop Header */}
       {allPagesBanner ? (
-        <Link href={allPagesBanner.link || '/shop'} className="block w-full h-48 md:h-64 bg-slate-100 rounded-[2rem] md:rounded-[4rem] mb-8 relative overflow-hidden">
+        <Link href={allPagesBanner.link || '/shop'} className="block w-full h-40 sm:h-48 md:h-56 lg:h-64 xl:h-72 bg-slate-100 mb-8 relative overflow-hidden">
           <div className="absolute inset-0">
             <Image
               src={allPagesBanner.image}

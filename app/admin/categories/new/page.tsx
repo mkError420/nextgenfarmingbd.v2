@@ -86,7 +86,8 @@ export default function NewCategory() {
             .map(v => ({
               name: v.name,
               options: v.options.filter(o => o.trim() !== '')
-            })),
+            }))
+            .filter(v => v.options.length > 0),
         }),
       });
 

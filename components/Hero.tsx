@@ -134,43 +134,6 @@ export default function Hero() {
     return () => clearInterval(timer);
   }, [carouselBanners.length]);
 
-  // Fallback slides if no banners from database
-  const fallbackSlides = [
-    {
-      id: 1,
-      title: 'বিশুদ্ধতায় অনন্য,',
-      highlight: 'স্বাদে সেরা',
-      description: 'সরাসরি খামারীদের থেকে সংগৃহীত প্রিমিয়াম কোয়ালিটি পণ্য এখন আপনার হাতের নাগালে।',
-      image: 'https://picsum.photos/seed/farm1/1200/800',
-      bgColor: 'from-emerald-900 to-emerald-700',
-      badge: '১০০% খাঁটি',
-      icon: <ShieldCheck className="text-emerald-300" size={24} />,
-      link: '/shop'
-    },
-    {
-      id: 2,
-      title: 'প্রাকৃতিক স্বাস্থ্য,',
-      highlight: 'অর্গানিক মধু',
-      description: 'সুন্দরবনের খাঁটি খলিশা ও গরাণ ফুলের মধু সংগ্রহ করুন সরাসরি আমাদের কাছ থেকে।',
-      image: 'https://picsum.photos/seed/honey1/1200/800',
-      bgColor: 'from-amber-800 to-orange-700',
-      badge: 'অর্গানিক',
-      icon: <Leaf className="text-amber-300" size={24} />,
-      link: '/shop'
-    },
-    {
-      id: 3,
-      title: 'নিত্যপ্রয়োজনীয়',
-      highlight: 'তাজা বাজার',
-      description: 'ঘি, তেল থেকে শুরু করে সব ধরনের নিত্য প্রয়োজনীয় মুদি পণ্য পান এক জায়গায়।',
-      image: 'https://picsum.photos/seed/grocery1/1200/800',
-      bgColor: 'from-blue-900 to-indigo-700',
-      badge: 'প্রিমিয়াম',
-      icon: <Sparkles className="text-blue-300" size={24} />,
-      link: '/shop'
-    }
-  ];
-
   const slides = carouselBanners.length > 0 ? carouselBanners.map((b, i) => ({
     id: b._id,
     title: b.title,
@@ -181,7 +144,7 @@ export default function Hero() {
     badge: 'বিশেষ অফার',
     icon: <ShieldCheck className="text-emerald-300" size={24} />,
     link: b.link
-  })) : fallbackSlides;
+  })) : [];
 
   return (
     <section className="bg-brand-bg py-4 md:py-10 px-4 md:px-8">
@@ -189,42 +152,50 @@ export default function Hero() {
         
         {/* Left Side: Animated Carousel Banner */}
         <div className="md:col-span-8 bg-slate-100 rounded-[2rem] overflow-hidden relative shadow-lg min-h-[300px] sm:min-h-[350px] md:min-h-[450px] lg:min-h-[500px] group">
-          <AnimatePresence initial={false}>
-            <motion.div
-              key={currentSlide}
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ 
-                x: { type: "spring", stiffness: 100, damping: 20 },
-                duration: 0.5 
-              }}
-              className={`absolute inset-0 bg-gradient-to-r ${slides[currentSlide].bgColor} flex items-center`}
-            >
-              <div className="absolute inset-0">
-                <Image
-                  src={slides[currentSlide].image}
-                  alt="Banner"
-                  fill
-                  className="object-cover"
-                />
+          {slides.length > 0 ? (
+            <>
+              <AnimatePresence initial={false}>
+                <motion.div
+                  key={currentSlide}
+                  initial={{ x: '100%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: '-100%' }}
+                  transition={{
+                    x: { type: "spring", stiffness: 100, damping: 20 },
+                    duration: 0.5
+                  }}
+                  className={`absolute inset-0 bg-gradient-to-r ${slides[currentSlide].bgColor} flex items-center`}
+                >
+                  <div className="absolute inset-0">
+                    <Image
+                      src={slides[currentSlide].image}
+                      alt="Banner"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+
+                  {/* Decorative elements */}
+                  <div className="absolute right-0 bottom-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-20 -mb-20" />
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Slide Indicators */}
+              <div className="absolute bottom-8 left-8 md:bottom-12 md:left-16 z-20 flex gap-2">
+                {slides.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentSlide(i)}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${currentSlide === i ? 'w-8 bg-white' : 'w-2 bg-white/30 hover:bg-white/50'}`}
+                  />
+                ))}
               </div>
-
-              {/* Decorative elements */}
-              <div className="absolute right-0 bottom-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-20 -mb-20" />
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Slide Indicators */}
-          <div className="absolute bottom-8 left-8 md:bottom-12 md:left-16 z-20 flex gap-2">
-            {slides.map((_, i) => (
-              <button 
-                key={i}
-                onClick={() => setCurrentSlide(i)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${currentSlide === i ? 'w-8 bg-white' : 'w-2 bg-white/30 hover:bg-white/50'}`}
-              />
-            ))}
-          </div>
+            </>
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
+              <p className="text-slate-400 text-sm italic">Loading...</p>
+            </div>
+          )}
         </div>
         
         {/* Right Side: Promo Banners */}

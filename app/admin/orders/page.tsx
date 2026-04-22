@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Eye, Search, Filter, Trash2, X, MapPin, Phone, Mail, Package, CreditCard, Printer } from 'lucide-react';
+import { Eye, Search, Filter, Trash2, X, MapPin, Phone, Mail, Package, CreditCard, Printer, Download, FileSpreadsheet, FileText } from 'lucide-react';
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
@@ -133,22 +133,26 @@ export default function AdminOrders() {
 
   const handlePrintOrder = () => {
     if (!selectedOrder) return;
-    
+
     const printContent = `
       <html>
         <head>
-          <title>Order ${selectedOrder.orderNumber || selectedOrder._id}</title>
+          <title>Order Details - ${selectedOrder.orderNumber || selectedOrder._id}</title>
           <style>
             body {
               font-family: Arial, sans-serif;
-              padding: 40px;
+              padding: 20px;
               max-width: 800px;
               margin: 0 auto;
             }
-            h1 {
-              color: #333;
+            .header {
               border-bottom: 2px solid #333;
               padding-bottom: 10px;
+              margin-bottom: 20px;
+            }
+            .header h1 {
+              margin: 0;
+              color: #333;
             }
             .section {
               margin: 20px 0;
@@ -204,20 +208,16 @@ export default function AdminOrders() {
           </style>
         </head>
         <body>
-          <h1>Order Details</h1>
-          
-          <div class="section">
-            <h2>Order Information</h2>
-            <div class="info-row"><span class="label">Order Number:</span> ${selectedOrder.orderNumber || selectedOrder._id}</div>
-            <div class="info-row"><span class="label">Order Date:</span> ${new Date(selectedOrder.createdAt).toLocaleString()}</div>
-            <div class="info-row"><span class="label">Status:</span> <span class="status status-${selectedOrder.status}">${selectedOrder.status}</span></div>
+          <div class="header">
+            <h1>Order Details</h1>
+            <p>Order Number: ${selectedOrder.orderNumber || selectedOrder._id}</p>
           </div>
 
           <div class="section">
             <h2>Customer Information</h2>
             <div class="info-row"><span class="label">Name:</span> ${selectedOrder.customerName}</div>
             <div class="info-row"><span class="label">Phone:</span> ${selectedOrder.customerPhone}</div>
-            ${selectedOrder.customerEmail ? `<div class="info-row"><span class="label">Email:</span> ${selectedOrder.customerEmail}</div>` : ''}
+            <div class="info-row"><span class="label">Email:</span> ${selectedOrder.customerEmail || 'N/A'}</div>
           </div>
 
           <div class="section">
@@ -274,14 +274,174 @@ export default function AdminOrders() {
     }
   };
 
+  const handleExportCSV = () => {
+    const ordersToExport = filteredOrders;
+    
+    // CSV headers
+    const headers = ['Order Number', 'Customer Name', 'Phone', 'Total Amount', 'Status', 'Payment Method', 'Payment Status', 'Date'];
+    
+    // CSV rows
+    const rows = ordersToExport.map((order: any) => [
+      order.orderNumber || order._id,
+      order.customerName,
+      order.customerPhone,
+      order.totalAmount,
+      order.status,
+      order.paymentMethod,
+      order.paymentStatus,
+      new Date(order.createdAt).toLocaleDateString()
+    ]);
+    
+    // Create CSV content
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `orders_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportPDF = () => {
+    const ordersToExport = filteredOrders;
+    
+    const pdfContent = `
+      <html>
+        <head>
+          <title>Orders Report</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 20px;
+              max-width: 1200px;
+              margin: 0 auto;
+            }
+            .header {
+              text-align: center;
+              border-bottom: 2px solid #333;
+              padding-bottom: 20px;
+              margin-bottom: 20px;
+            }
+            .header h1 {
+              margin: 0;
+              color: #333;
+            }
+            .header p {
+              color: #666;
+              margin: 5px 0 0;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            th, td {
+              border: 1px solid #ddd;
+              padding: 12px;
+              text-align: left;
+            }
+            th {
+              background-color: #f5f5f5;
+              font-weight: bold;
+            }
+            .status {
+              padding: 5px 10px;
+              border-radius: 3px;
+              display: inline-block;
+              font-size: 12px;
+              font-weight: bold;
+            }
+            .status-pending { background-color: #fff3cd; color: #856404; }
+            .status-confirmed { background-color: #d1ecf1; color: #0c5460; }
+            .status-processing { background-color: #e2e3e5; color: #383d41; }
+            .status-shipped { background-color: #d4edda; color: #155724; }
+            .status-delivered { background-color: #d4edda; color: #155724; }
+            .status-cancelled { background-color: #f8d7da; color: #721c24; }
+            @media print {
+              body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Orders Report</h1>
+            <p>Generated on: ${new Date().toLocaleString()}</p>
+            <p>Total Orders: ${ordersToExport.length}</p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Order Number</th>
+                <th>Customer Name</th>
+                <th>Phone</th>
+                <th>Total Amount</th>
+                <th>Status</th>
+                <th>Payment Method</th>
+                <th>Payment Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${ordersToExport.map((order: any) => `
+                <tr>
+                  <td>${order.orderNumber || order._id}</td>
+                  <td>${order.customerName}</td>
+                  <td>${order.customerPhone}</td>
+                  <td>৳${order.totalAmount}</td>
+                  <td><span class="status status-${order.status}">${order.status}</span></td>
+                  <td>${order.paymentMethod}</td>
+                  <td>${order.paymentStatus}</td>
+                  <td>${new Date(order.createdAt).toLocaleDateString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(pdfContent);
+      printWindow.document.close();
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8">Loading...</div>;
   }
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
+        <div className="flex gap-2">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <FileSpreadsheet size={16} />
+            Export CSV
+          </button>
+          <button
+            onClick={handleExportPDF}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            <FileText size={16} />
+            Export PDF
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

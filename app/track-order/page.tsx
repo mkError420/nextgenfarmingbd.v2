@@ -12,24 +12,42 @@ export default function TrackOrderPage() {
   const [phone, setPhone] = useState('');
   const [isTracking, setIsTracking] = useState(false);
   const [result, setResult] = useState<null | 'found' | 'not-found'>(null);
+  const [orderData, setOrderData] = useState<any>(null);
 
-  const handleTrack = (e: React.FormEvent) => {
+  const handleTrack = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!orderId || !phone) return;
     
     setIsTracking(true);
     setResult(null);
+    setOrderData(null);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsTracking(false);
-      // Mock logic: any ID starting with 'ORD' is found
-      if (orderId.toUpperCase().startsWith('ORD')) {
-        setResult('found');
+    try {
+      const response = await fetch(`/api/orders?customerPhone=${phone}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        const orders = data.orders || [];
+        const foundOrder = orders.find((order: any) => 
+          order.orderNumber?.toLowerCase() === orderId.toLowerCase() || 
+          order._id.toString() === orderId
+        );
+        
+        if (foundOrder) {
+          setOrderData(foundOrder);
+          setResult('found');
+        } else {
+          setResult('not-found');
+        }
       } else {
         setResult('not-found');
       }
-    }, 1500);
+    } catch (error) {
+      console.error('Error tracking order:', error);
+      setResult('not-found');
+    } finally {
+      setIsTracking(false);
+    }
   };
 
   return (
@@ -111,7 +129,7 @@ export default function TrackOrderPage() {
            </div>
 
            <AnimatePresence mode="wait">
-              {result === 'found' && (
+              {result === 'found' && orderData && (
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -125,41 +143,48 @@ export default function TrackOrderPage() {
                             <Truck size={32} className="animate-bounce" />
                          </div>
                          <div>
-                            <h3 className="text-2xl font-black text-brand-green-dark italic">অর্ডার প্রসেস হচ্ছে</h3>
-                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Order ID: {orderId.toUpperCase()}</p>
+                            <h3 className="text-2xl font-black text-brand-green-dark italic">অর্ডার {orderData.status}</h3>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Order ID: {orderData.orderNumber || orderData._id}</p>
                          </div>
                       </div>
                       <div className="text-center md:text-right">
-                         <p className="text-slate-500 text-sm font-bold italic">সম্ভাব্য ডেলিভারি ডেট</p>
-                         <h4 className="text-xl font-black text-brand-green underline underline-offset-4 decoration-brand-green/20">২৫ এপ্রিল, ২০২৬</h4>
+                         <p className="text-slate-500 text-sm font-bold italic">অর্ডার ডেট</p>
+                         <h4 className="text-xl font-black text-brand-green underline underline-offset-4 decoration-brand-green/20">{new Date(orderData.createdAt).toLocaleDateString('bn-BD')}</h4>
                       </div>
                    </div>
 
                    {/* Progress Tracker */}
                    <div className="relative pt-10 pb-4">
                       <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-100 -translate-y-1/2 rounded-full" />
-                      <div className="absolute top-1/2 left-0 w-2/3 h-1 bg-brand-green -translate-y-1/2 rounded-full" />
                       
                       <div className="relative z-10 flex justify-between">
                          {[
-                           { icon: Clock, label: 'পেন্ডিং', status: 'completed' },
-                           { icon: Package, label: 'প্রসেসিং', status: 'completed' },
-                           { icon: Truck, label: 'শিপড্', status: 'current' },
-                           { icon: CheckCircle2, label: 'ডেলিভার্ড', status: 'pending' },
-                         ].map((step, i) => (
-                           <div key={i} className="flex flex-col items-center gap-3">
+                           { icon: Clock, label: 'পেন্ডিং', status: 'pending' },
+                           { icon: Package, label: 'কনফার্মড', status: 'confirmed' },
+                           { icon: Package, label: 'প্রসেসিং', status: 'processing' },
+                           { icon: Truck, label: 'শিপড্', status: 'shipped' },
+                           { icon: CheckCircle2, label: 'ডেলিভার্ড', status: 'delivered' },
+                         ].map((step, i) => {
+                           const stepIndex = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'].indexOf(step.status);
+                           const currentIndex = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'].indexOf(orderData.status);
+                           const stepStatus = stepIndex <= currentIndex ? 'completed' : 'pending';
+                           const isCurrent = stepIndex === currentIndex;
+                           
+                           return (
+                             <div key={i} className="flex flex-col items-center gap-3">
                               <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${
-                                step.status === 'completed' ? 'bg-brand-green text-white rotate-[360deg] duration-700' : 
-                                step.status === 'current' ? 'bg-white text-brand-green border-2 border-brand-green animate-pulse scale-110' : 
+                                stepStatus === 'completed' ? 'bg-brand-green text-white' : 
+                                isCurrent ? 'bg-white text-brand-green border-2 border-brand-green animate-pulse scale-110' : 
                                 'bg-white text-slate-300'
                               }`}>
                                  <step.icon size={20} />
                               </div>
                               <span className={`text-[10px] md:text-xs font-black italic uppercase tracking-widest ${
-                                step.status === 'pending' ? 'text-slate-300' : 'text-brand-green-dark'
+                                stepStatus === 'pending' ? 'text-slate-300' : 'text-brand-green-dark'
                               }`}>{step.label}</span>
                            </div>
-                         ))}
+                           );
+                         })}
                       </div>
                    </div>
 
@@ -170,19 +195,45 @@ export default function TrackOrderPage() {
                             <MapPin size={18} />
                             <h4 className="font-black italic">ডেলিভারি এড্রেস</h4>
                          </div>
-                         <p className="text-slate-600 text-sm font-medium italic">Metro Housing, Block-C, Main Road, H#03, Mohammadpur, Dhaka-1207</p>
+                         <p className="text-slate-600 text-sm font-medium italic">
+                            {orderData.shippingAddress?.street}, {orderData.shippingAddress?.city}, {orderData.shippingAddress?.state}, {orderData.shippingAddress?.zipCode}
+                         </p>
                       </div>
                       <div className="bg-white p-6 rounded-3xl border border-emerald-50">
                          <div className="flex items-center gap-10 mb-4 h-full">
                             <div>
-                               <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">কুরিয়ার পার্টনার</p>
-                               <p className="text-brand-green-dark font-black italic">Pathao Courier</p>
+                               <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">পেমেন্ট মেথড</p>
+                               <p className="text-brand-green-dark font-black italic">{orderData.paymentMethod}</p>
                             </div>
                             <div>
-                               <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">ট্র্যাকিং নম্বর</p>
-                               <p className="text-brand-green-dark font-black italic">PK-991203921</p>
+                               <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">মোট টাকা</p>
+                               <p className="text-brand-green-dark font-black italic">৳{orderData.totalAmount}</p>
                             </div>
                          </div>
+                      </div>
+                   </div>
+
+                   {/* Order Items */}
+                   <div className="bg-white p-6 rounded-3xl border border-emerald-50">
+                      <h4 className="font-black italic text-brand-green mb-4">অর্ডার আইটেমসমূহ</h4>
+                      <div className="space-y-3">
+                         {orderData.items?.map((item: any, index: number) => (
+                            <div key={index} className="flex items-center justify-between py-2 border-b border-emerald-50 last:border-none">
+                               <div className="flex items-center gap-3">
+                                  {item.image ? (
+                                    <img src={item.image} alt={item.name} className="w-10 h-10 rounded object-cover" referrerPolicy="no-referrer" />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
+                                      <Package size={16} className="text-gray-400" />
+                                    </div>
+                                  )}
+                                  <span className="text-sm font-medium text-slate-700">{item.name}</span>
+                               </div>
+                               <div className="text-right">
+                                  <p className="text-sm font-bold text-brand-green">৳{item.price} × {item.quantity}</p>
+                               </div>
+                            </div>
+                         ))}
                       </div>
                    </div>
                 </motion.div>

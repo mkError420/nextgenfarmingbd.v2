@@ -74,7 +74,8 @@ export async function POST(request: NextRequest) {
     if (!orderData.orderNumber) {
       const year = new Date().getFullYear();
       const phoneLast3 = orderData.customerPhone.slice(-3);
-      orderData.orderNumber = 'Next' + year + phoneLast3;
+      const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
+      orderData.orderNumber = 'Next' + year + phoneLast3 + randomSuffix;
     }
     
     // Validate required fields

@@ -1,11 +1,16 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface IVariantType {
+  name: string;
+  options: string[];
+}
+
 export interface ICategory extends Document {
   name: string;
   name_en: string;
   icon: string;
   subcategories: string[];
-  variants: string[];
+  variants: IVariantType[];
   description?: string;
   isActive: boolean;
   createdAt: Date;
@@ -34,8 +39,16 @@ const CategorySchema: Schema = new Schema({
     trim: true,
   }],
   variants: [{
-    type: String,
-    trim: true,
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    options: [{
+      type: String,
+      required: true,
+      trim: true,
+    }],
   }],
   description: {
     type: String,

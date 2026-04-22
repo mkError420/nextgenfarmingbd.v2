@@ -36,7 +36,7 @@ export default function SingleProductPage() {
   const router = useRouter();
   const id = params?.id as string;
   const [baseProduct, setBaseProduct] = useState<any>(null);
-  const [categoryVariants, setCategoryVariants] = useState<string[]>([]);
+  const [categoryVariants, setCategoryVariants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function SingleProductPage() {
         'স্বাস্থ্যসম্মত উপায়ে প্যাকেটজাত',
         'পারফেক্ট স্বাদের নিশ্চয়তা'
       ],
-      variants: categoryVariants.length > 0 ? categoryVariants : [baseProduct.weight || 'Regular', '৫০০ গ্রাম', '১ কেজি'],
+      variants: categoryVariants,
       images: (baseProduct.images && baseProduct.images.length > 0) 
         ? baseProduct.images 
         : (baseProduct.image 
@@ -100,7 +100,7 @@ export default function SingleProductPage() {
 
   const [mainImage, setMainImage] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [selectedVariant, setSelectedVariant] = useState('');
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState('description');
   const [showSuccess, setShowSuccess] = useState(false);
   const [zoomOrigin, setZoomOrigin] = useState('center');
@@ -110,10 +110,18 @@ export default function SingleProductPage() {
   const { addToCart, setIsDrawerOpen } = useCart();
 
   useEffect(() => {
-    if (product) {
+    if (product && product.variants) {
       const mainIndex = product.mainImageIndex ?? 0;
       setMainImage(product.images[Math.min(mainIndex, product.images.length - 1)] || '');
-      setSelectedVariant(product.variants[0] || '');
+      
+      // Initialize selected variants with first option of each variant type
+      const initialVariants: Record<string, string> = {};
+      product.variants.forEach((variant: any) => {
+        if (variant.options && variant.options.length > 0) {
+          initialVariants[variant.name] = variant.options[0];
+        }
+      });
+      setSelectedVariants(initialVariants);
     }
   }, [product]);
 
@@ -150,13 +158,18 @@ export default function SingleProductPage() {
     
     const productImage = product.images?.[0] || product.image || '';
     
+    // Format selected variants as string
+    const variantString = Object.entries(selectedVariants)
+      .map(([type, option]) => `${type}: ${option}`)
+      .join(', ');
+    
     addToCart({
       id: product.id,
       name: product.name,
       price: product.price,
       quantity: quantity,
       image: productImage,
-      variant: selectedVariant
+      variant: variantString
     });
 
     setIsDrawerOpen(true);
@@ -179,13 +192,20 @@ export default function SingleProductPage() {
   const handleBuyNow = () => {
     if (!product) return;
     
+    const productImage = product.images?.[0] || product.image || '';
+    
+    // Format selected variants as string
+    const variantString = Object.entries(selectedVariants)
+      .map(([type, option]) => `${type}: ${option}`)
+      .join(', ');
+    
     addToCart({
       id: product.id,
       name: product.name,
       price: product.price,
       quantity: quantity,
-      image: product.image,
-      variant: selectedVariant
+      image: productImage,
+      variant: variantString
     });
 
     router.push('/checkout');
@@ -301,20 +321,38 @@ export default function SingleProductPage() {
 
             {/* Selection Options */}
             <div className="space-y-6 pt-4 border-t border-slate-100">
-               <div className="space-y-3">
+               {product.variants && product.variants.length > 0 && product.variants.map((variant: any) => (
+                 <div key={variant.name} className="space-y-3">
+                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{variant.name}</span>
+                  <div className="flex flex-wrap gap-3">
+                    {variant.options.map((option: string) => (
+                      <button 
+                        key={option}
+                        onClick={() => setSelectedVariants({ ...selectedVariants, [variant.name]: option })}
+                        className={`px-6 py-2.5 rounded-2xl text-sm font-black transition-all border-2 ${selectedVariants[variant.name] === option ? 'bg-brand-green-dark border-brand-green-dark text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500 hover:border-brand-green'}`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+               </div>
+               ))}
+               {(!product.variants || product.variants.length === 0) && (
+                 <div className="space-y-3">
                   <span className="text-xs font-black text-slate-400 uppercase tracking-widest">পরিমাণ নির্বাচন করুন (Variant)</span>
                   <div className="flex flex-wrap gap-3">
-                    {product.variants.map((v: string) => (
+                    {[baseProduct.weight || 'Regular', '৫০০ গ্রাম', '১ কেজি'].map((v: string) => (
                       <button 
                         key={v}
-                        onClick={() => setSelectedVariant(v)}
-                        className={`px-6 py-2.5 rounded-2xl text-sm font-black transition-all border-2 ${selectedVariant === v ? 'bg-brand-green-dark border-brand-green-dark text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500 hover:border-brand-green'}`}
+                        onClick={() => setSelectedVariants({ ...selectedVariants, 'Weight': v })}
+                        className={`px-6 py-2.5 rounded-2xl text-sm font-black transition-all border-2 ${selectedVariants['Weight'] === v ? 'bg-brand-green-dark border-brand-green-dark text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500 hover:border-brand-green'}`}
                       >
                         {v}
                       </button>
                     ))}
                   </div>
                </div>
+               )}
 
                <div className="flex flex-col sm:flex-row items-center gap-6 pt-4">
                   <div className="flex items-center bg-white border-2 border-slate-50 rounded-2xl p-1.5 shadow-sm w-full sm:w-auto">

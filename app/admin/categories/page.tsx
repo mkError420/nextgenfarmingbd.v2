@@ -114,16 +114,16 @@ export default function AdminCategories() {
                   </span>
                 ))}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {category.variants?.map((variant: string, index: number) => (
-                  <span
-                    key={index}
-                    className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded"
-                  >
-                    {variant}
-                  </span>
-                ))}
-              </div>
+              {category.variants?.length > 0 && (
+                <div className="space-y-2">
+                  {category.variants.map((variant: any, index: number) => (
+                    <div key={index} className="text-xs">
+                      <span className="font-semibold text-gray-700">{variant.name}:</span>
+                      <span className="text-green-700 ml-1">{variant.options.join(', ')}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}

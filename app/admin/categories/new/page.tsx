@@ -13,7 +13,7 @@ export default function NewCategory() {
     name_en: '',
     icon: '',
     subcategories: [''],
-    variants: [''],
+    variants: [{ name: '', options: [''] }],
   });
 
   const handleAddSubcategory = () => {
@@ -32,7 +32,7 @@ export default function NewCategory() {
   };
 
   const handleAddVariant = () => {
-    setFormData({ ...formData, variants: [...formData.variants, ''] });
+    setFormData({ ...formData, variants: [...formData.variants, { name: '', options: [''] }] });
   };
 
   const handleRemoveVariant = (index: number) => {
@@ -40,9 +40,33 @@ export default function NewCategory() {
     setFormData({ ...formData, variants: newVariants });
   };
 
-  const handleVariantChange = (index: number, value: string) => {
+  const handleVariantNameChange = (index: number, value: string) => {
     const newVariants = [...formData.variants];
-    newVariants[index] = value;
+    newVariants[index] = { ...newVariants[index], name: value };
+    setFormData({ ...formData, variants: newVariants });
+  };
+
+  const handleAddVariantOption = (variantIndex: number) => {
+    const newVariants = [...formData.variants];
+    newVariants[variantIndex] = {
+      ...newVariants[variantIndex],
+      options: [...newVariants[variantIndex].options, '']
+    };
+    setFormData({ ...formData, variants: newVariants });
+  };
+
+  const handleRemoveVariantOption = (variantIndex: number, optionIndex: number) => {
+    const newVariants = [...formData.variants];
+    newVariants[variantIndex] = {
+      ...newVariants[variantIndex],
+      options: newVariants[variantIndex].options.filter((_, i) => i !== optionIndex)
+    };
+    setFormData({ ...formData, variants: newVariants });
+  };
+
+  const handleVariantOptionChange = (variantIndex: number, optionIndex: number, value: string) => {
+    const newVariants = [...formData.variants];
+    newVariants[variantIndex].options[optionIndex] = value;
     setFormData({ ...formData, variants: newVariants });
   };
 
@@ -57,7 +81,12 @@ export default function NewCategory() {
         body: JSON.stringify({
           ...formData,
           subcategories: formData.subcategories.filter(s => s.trim() !== ''),
-          variants: formData.variants.filter(v => v.trim() !== ''),
+          variants: formData.variants
+            .filter(v => v.name.trim() !== '')
+            .map(v => ({
+              name: v.name,
+              options: v.options.filter(o => o.trim() !== '')
+            })),
         }),
       });
 
@@ -173,27 +202,62 @@ export default function NewCategory() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Product Variants (e.g., ৫০০ গ্রাম, ১ কেজি)
+              Product Variant Types (e.g., Size, Color, Weight)
             </label>
-            <div className="space-y-2">
-              {formData.variants.map((variant, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={variant}
-                    onChange={(e) => handleVariantChange(index, e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="Variant name (e.g., ৫০০ গ্রাম)"
-                  />
-                  {formData.variants.length > 1 && (
+            <div className="space-y-4">
+              {formData.variants.map((variant, variantIndex) => (
+                <div key={variantIndex} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={variant.name}
+                      onChange={(e) => handleVariantNameChange(variantIndex, e.target.value)}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder="Variant type name (e.g., Size, Color, Weight)"
+                    />
+                    {formData.variants.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveVariant(variantIndex)}
+                        className="p-2 text-red-600 hover:text-red-700"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-xs font-medium text-gray-600">
+                      Options for {variant.name || 'this variant type'}
+                    </label>
+                    {variant.options.map((option, optionIndex) => (
+                      <div key={optionIndex} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={option}
+                          onChange={(e) => handleVariantOptionChange(variantIndex, optionIndex, e.target.value)}
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          placeholder="Option (e.g., S, M, L, XL or Red, Blue, Green)"
+                        />
+                        {variant.options.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveVariantOption(variantIndex, optionIndex)}
+                            className="p-2 text-red-600 hover:text-red-700"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
                     <button
                       type="button"
-                      onClick={() => handleRemoveVariant(index)}
-                      className="p-2 text-red-600 hover:text-red-700"
+                      onClick={() => handleAddVariantOption(variantIndex)}
+                      className="flex items-center px-3 py-1.5 text-sm text-green-600 border border-green-600 rounded-lg hover:bg-green-50 transition-colors"
                     >
-                      <X className="w-5 h-5" />
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Option
                     </button>
-                  )}
+                  </div>
                 </div>
               ))}
               <button
@@ -202,7 +266,7 @@ export default function NewCategory() {
                 className="flex items-center px-4 py-2 text-green-600 border border-green-600 rounded-lg hover:bg-green-50 transition-colors"
               >
                 <Plus className="w-5 h-5 mr-2" />
-                Add Variant
+                Add Variant Type
               </button>
             </div>
           </div>

@@ -6,7 +6,14 @@ import path from 'path';
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const files = formData.getAll('files') as File[];
+    // Handle both 'files' (array) and 'file' (single) form field names
+    let files = formData.getAll('files') as File[];
+    if (!files || files.length === 0 || (files.length === 1 && files[0].name === '')) {
+      const singleFile = formData.get('file') as File;
+      if (singleFile && singleFile.name !== '') {
+        files = [singleFile];
+      }
+    }
 
     if (!files || files.length === 0) {
       return NextResponse.json({ error: 'No files uploaded' }, { status: 400 });

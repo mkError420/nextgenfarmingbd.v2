@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     const userId = searchParams.get('userId');
+    const customerPhone = searchParams.get('customerPhone');
     const status = searchParams.get('status');
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
@@ -29,6 +30,10 @@ export async function GET(request: NextRequest) {
     
     if (userId) {
       query.userId = userId;
+    }
+    
+    if (customerPhone) {
+      query.customerPhone = customerPhone;
     }
     
     if (status) {
@@ -67,7 +72,9 @@ export async function POST(request: NextRequest) {
     
     // Generate order number if not provided
     if (!orderData.orderNumber) {
-      orderData.orderNumber = 'ORD' + Date.now() + Math.random().toString(36).substring(2, 7).toUpperCase();
+      const year = new Date().getFullYear();
+      const phoneLast3 = orderData.customerPhone.slice(-3);
+      orderData.orderNumber = 'Next' + year + phoneLast3;
     }
     
     // Validate required fields

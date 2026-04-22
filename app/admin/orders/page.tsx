@@ -490,12 +490,18 @@ export default function AdminOrders() {
                         <tr key={index}>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
-                              <img
-                                src={item.image}
-                                alt={item.name}
-                                className="w-12 h-12 rounded object-cover"
-                                referrerPolicy="no-referrer"
-                              />
+                              {item.image ? (
+                                <img
+                                  src={item.image}
+                                  alt={item.name}
+                                  className="w-12 h-12 rounded object-cover"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded bg-gray-100 flex items-center justify-center">
+                                  <Package className="w-6 h-6 text-gray-400" />
+                                </div>
+                              )}
                               <div>
                                 <p className="font-medium text-gray-900">{item.name}</p>
                                 <p className="text-sm text-gray-500">{item.name_en}</p>

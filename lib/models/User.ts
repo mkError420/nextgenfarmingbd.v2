@@ -2,8 +2,8 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IUser extends Document {
   name: string;
-  email: string;
-  phone?: string;
+  email?: string;
+  phone: string;
   avatar?: string;
   role: 'user' | 'admin';
   addresses: {
@@ -28,13 +28,13 @@ const UserSchema: Schema = new Schema({
   },
   email: {
     type: String,
-    required: true,
-    unique: true,
     lowercase: true,
     trim: true,
   },
   phone: {
     type: String,
+    required: true,
+    unique: true,
     trim: true,
   },
   avatar: {
@@ -85,7 +85,11 @@ const UserSchema: Schema = new Schema({
 
 // Create indexes
 UserSchema.index({ email: 1 });
+UserSchema.index({ phone: 1 });
 UserSchema.index({ role: 1 });
 UserSchema.index({ isActive: 1 });
 
-export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+// Force model reload to apply schema changes
+delete mongoose.models.User;
+delete (mongoose.connection.models as any)['User'];
+export default mongoose.model<IUser>('User', UserSchema);

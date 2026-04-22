@@ -10,6 +10,7 @@ import {
   FileText, 
   Tag, 
   Image as ImageIcon,
+  Users,
   LogOut,
   Menu,
   X
@@ -29,6 +30,7 @@ export default function AdminLayout({
     { name: 'Products', href: '/admin/products', icon: Package },
     { name: 'Categories', href: '/admin/categories', icon: FolderTree },
     { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
+    { name: 'Customers', href: '/admin/customers', icon: Users },
     { name: 'Blogs', href: '/admin/blogs', icon: FileText },
     { name: 'Deals', href: '/admin/deals', icon: Tag },
     { name: 'Banners', href: '/admin/banners', icon: ImageIcon },

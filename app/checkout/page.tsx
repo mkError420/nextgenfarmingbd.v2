@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/lib/CartContext';
@@ -28,6 +28,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [isOrdered, setIsOrdered] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<any>(null);
+  const [customer, setCustomer] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -35,6 +36,20 @@ export default function CheckoutPage() {
     city: 'Dhaka',
     notes: ''
   });
+
+  useEffect(() => {
+    // Check if customer is logged in
+    const storedCustomer = localStorage.getItem('customer');
+    if (storedCustomer) {
+      const parsedCustomer = JSON.parse(storedCustomer);
+      setCustomer(parsedCustomer);
+      setFormData(prev => ({
+        ...prev,
+        name: parsedCustomer.name || '',
+        phone: parsedCustomer.phone || ''
+      }));
+    }
+  }, []);
 
   const shipping = (formData.city === 'Dhaka' || subtotal >= 10000) ? 0 : 60;
   const total = subtotal + shipping;
@@ -300,7 +315,7 @@ export default function CheckoutPage() {
     
     try {
       const orderData = {
-        userId: 'guest', // Can be updated to actual user ID when auth is implemented
+        userId: customer?.id || 'guest',
         customerName: formData.name,
         customerPhone: formData.phone,
         customerEmail: '', // Optional

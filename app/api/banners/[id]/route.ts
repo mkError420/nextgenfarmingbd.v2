@@ -30,11 +30,11 @@ const compressForMobile = async (imagePath: string): Promise<string> => {
   }
 };
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await mongoose.connect(MONGODB_URI);
     
-    const { id } = params;
+    const { id } = await params;
     const updateData = await request.json();
 
     // Check if banner exists
@@ -59,11 +59,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await mongoose.connect(MONGODB_URI);
     
-    const { id } = params;
+    const { id } = await params;
 
     // Check if banner exists
     const banner = await Banner.findById(id);

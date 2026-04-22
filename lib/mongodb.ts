@@ -1,7 +1,12 @@
 import { MongoClient, Db } from 'mongodb';
 
 // Direct connection format - bypasses DNS SRV lookup
-const uri = process.env.MONGODB_URI || "mongodb://mkrabbanicse_db_user:nobinislam420%40%23%24@ac-ru22zib-shard-00-00.g2korqj.mongodb.net:27017,ac-ru22zib-shard-00-01.g2korqj.mongodb.net:27017,ac-ru22zib-shard-00-02.g2korqj.mongodb.net:27017/nextgenfarming?ssl=true&replicaSet=atlas-jstves-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0";
+const uri = process.env.MONGODB_URI;
+
+if (!uri) {
+  throw new Error('Please define the MONGODB_URI environment variable');
+}
+
 const options = {
   serverSelectionTimeoutMS: 15000,
   socketTimeoutMS: 45000,

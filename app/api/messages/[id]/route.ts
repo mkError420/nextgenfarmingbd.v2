@@ -6,12 +6,13 @@ const MONGODB_URI = "mongodb://mkrabbanicse_db_user:nobinislam420%40%23%24@ac-ru
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await mongoose.connect(MONGODB_URI);
 
-    const message = await Message.findById(params.id);
+    const { id } = await params;
+    const message = await Message.findById(id);
 
     if (!message) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 });
@@ -26,7 +27,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await mongoose.connect(MONGODB_URI);
@@ -34,8 +35,9 @@ export async function PUT(
     const body = await request.json();
     const { isRead } = body;
 
+    const { id } = await params;
     const message = await Message.findByIdAndUpdate(
-      params.id,
+      id,
       { isRead },
       { new: true }
     );
@@ -53,12 +55,13 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await mongoose.connect(MONGODB_URI);
 
-    const message = await Message.findByIdAndDelete(params.id);
+    const { id } = await params;
+    const message = await Message.findByIdAndDelete(id);
 
     if (!message) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 });

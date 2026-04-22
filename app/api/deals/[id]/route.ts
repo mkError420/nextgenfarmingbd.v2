@@ -4,11 +4,11 @@ import Deal from '@/lib/models/Deal';
 
 const MONGODB_URI = "mongodb://mkrabbanicse_db_user:nobinislam420%40%23%24@ac-ru22zib-shard-00-00.g2korqj.mongodb.net:27017,ac-ru22zib-shard-00-01.g2korqj.mongodb.net:27017,ac-ru22zib-shard-00-02.g2korqj.mongodb.net:27017/nextgenfarming?ssl=true&replicaSet=atlas-jstves-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0";
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await mongoose.connect(MONGODB_URI);
     
-    const { id } = params;
+    const { id } = await params;
 
     // Check if deal exists
     const deal = await Deal.findById(id);
@@ -23,11 +23,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await mongoose.connect(MONGODB_URI);
     
-    const { id } = params;
+    const { id } = await params;
     const updateData = await request.json();
 
     // Check if deal exists
@@ -52,11 +52,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await mongoose.connect(MONGODB_URI);
     
-    const { id } = params;
+    const { id } = await params;
 
     // Check if deal exists
     const deal = await Deal.findById(id);

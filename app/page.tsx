@@ -21,27 +21,44 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-    fetchFeaturedBanner();
-    fetchDeals();
-  }, []);
+    const fetchAllData = async () => {
+      try {
+        const [productsRes, categoriesRes, bannersRes, dealsRes] = await Promise.all([
+          fetch('/api/products'),
+          fetch('/api/categories'),
+          fetch('/api/banners?isActive=true&position=featured-collections'),
+          fetch('/api/deals?limit=10')
+        ]);
 
-  const fetchDeals = async () => {
-    try {
-      const res = await fetch('/api/deals?limit=10');
-      const data = await res.json();
-      const activeDeals = (data.deals || []).filter((deal: any) => {
-        const now = new Date();
-        const startDate = new Date(deal.startDate);
-        const endDate = new Date(deal.endDate);
-        return startDate <= now && endDate >= now;
-      });
-      setDeals(activeDeals);
-    } catch (error) {
-      console.error('Error fetching deals:', error);
-    }
-  };
+        const productsData = await productsRes.json();
+        const categoriesData = await categoriesRes.json();
+        const bannersData = await bannersRes.json();
+        const dealsData = await dealsRes.json();
+
+        setProducts(productsData.products || []);
+        setCategories(categoriesData.categories || []);
+        
+        const banners = bannersData.banners || [];
+        if (banners.length > 0) {
+          setFeaturedBanner(banners[0]);
+        }
+
+        const activeDeals = (dealsData.deals || []).filter((deal: any) => {
+          const now = new Date();
+          const startDate = new Date(deal.startDate);
+          const endDate = new Date(deal.endDate);
+          return startDate <= now && endDate >= now;
+        });
+        setDeals(activeDeals);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllData();
+  }, []);
 
   const handleCopyCoupon = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -57,41 +74,6 @@ export default function Home() {
       window.location.href = '/checkout';
     }, 500);
   };
-
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch('/api/products');
-      const data = await res.json();
-      setProducts(data.products || []);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const res = await fetch('/api/categories');
-      const data = await res.json();
-      setCategories(data.categories || []);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
-
-  const fetchFeaturedBanner = async () => {
-    try {
-      const res = await fetch('/api/banners?isActive=true&position=featured-collections');
-      const data = await res.json();
-      const banners = data.banners || [];
-      if (banners.length > 0) {
-        setFeaturedBanner(banners[0]);
-      }
-    } catch (error) {
-      console.error('Error fetching featured banner:', error);
-    }
-  };
   const offerMessages = [
     "প্রথম অর্ডারে ১০% ডিসকাউন্ট! কোড: NEXTGEN10",
     "সারা বাংলাদেশে ফ্রি ডেলিভারি (মিনিমাম ১৫০০/- অর্ডার)",
@@ -103,6 +85,17 @@ export default function Home() {
   const brandNames = [
     "FarmingBD", "NextGen", "Organic Life", "Pure Nature", "Health First", "Eco Farm", "Green Harvest"
   ];
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-brand-bg flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-brand-green border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-brand-green font-bold">Loading...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-brand-bg">

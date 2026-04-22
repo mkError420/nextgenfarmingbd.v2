@@ -188,7 +188,7 @@ export default function Hero() {
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
         
         {/* Left Side: Animated Carousel Banner */}
-        <div className="md:col-span-8 bg-slate-100 rounded-[2rem] overflow-hidden relative shadow-lg min-h-[350px] md:min-h-[450px] group">
+        <div className="md:col-span-8 bg-slate-100 rounded-[2rem] overflow-hidden relative shadow-lg min-h-[300px] sm:min-h-[350px] md:min-h-[450px] lg:min-h-[500px] group">
           <AnimatePresence initial={false}>
             <motion.div
               key={currentSlide}
@@ -201,57 +201,13 @@ export default function Hero() {
               }}
               className={`absolute inset-0 bg-gradient-to-r ${slides[currentSlide].bgColor} flex items-center`}
             >
-              <div className="absolute inset-0 opacity-20">
-                <Image 
+              <div className="absolute inset-0">
+                <Image
                   src={slides[currentSlide].image}
-                  alt="Background"
+                  alt="Banner"
                   fill
-                  className="object-cover mix-blend-overlay"
+                  className="object-cover"
                 />
-              </div>
-
-              <div className="relative z-10 p-8 md:p-16 space-y-4 md:space-y-6 w-full max-w-2xl">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="flex items-center gap-2 bg-black/10 backdrop-blur-sm w-fit px-4 py-1.5 rounded-full border border-white/10"
-                >
-                  {slides[currentSlide].icon}
-                  <span className="text-white text-[10px] md:text-xs font-black uppercase tracking-widest">{slides[currentSlide].badge}</span>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <h1 className="text-4xl md:text-6xl font-black text-white leading-[1.1] italic">
-                    {slides[currentSlide].title}<br />
-                    <span className="text-emerald-300 drop-shadow-lg">{slides[currentSlide].highlight}</span>
-                  </h1>
-                </motion.div>
-                
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-white/80 text-sm md:text-lg italic font-medium max-w-sm"
-                >
-                  {slides[currentSlide].description}
-                </motion.p>
-                
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="flex items-center gap-4"
-                >
-                  <Link href={slides[currentSlide].link || '/shop'} className="bg-white text-emerald-900 px-8 py-3.5 rounded-2xl font-black text-sm shadow-xl hover:bg-emerald-50 transition-all flex items-center gap-2 group/btn">
-                    এখনই কিনুন
-                    <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />
-                  </Link>
-                </motion.div>
               </div>
 
               {/* Decorative elements */}

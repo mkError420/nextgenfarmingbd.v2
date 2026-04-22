@@ -11,14 +11,17 @@ export default function NewBanner() {
   const [uploading, setUploading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [mobileImageFile, setMobileImageFile] = useState<File | null>(null);
+  const [mobileImagePreview, setMobileImagePreview] = useState<string>('');
   const [formData, setFormData] = useState({
     title: '',
     title_en: '',
     description: '',
     description_en: '',
     image: '',
+    mobileImage: '',
     link: '',
-    position: 'home' as 'home' | 'category' | 'product' | 'all' | 'hero-carousel' | 'hero-right-top' | 'hero-right-bottom' | 'featured-collections',
+    position: 'home' as 'home' | 'category' | 'product' | 'all' | 'hero-carousel' | 'featured-collections',
     order: '',
     startDate: '',
     endDate: '',
@@ -46,6 +49,27 @@ export default function NewBanner() {
     }
   };
 
+  const handleMobileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
+        alert('Only JPG, JPEG, PNG, and WebP images are allowed');
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+      setMobileImageFile(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => setMobileImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
   const uploadImage = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
@@ -69,8 +93,9 @@ export default function NewBanner() {
 
     try {
       let imageUrl = formData.image;
+      let mobileImageUrl = formData.mobileImage;
       
-      // Upload image if file is selected
+      // Upload desktop image if file is selected
       if (imageFile) {
         setUploading(true);
         try {
@@ -86,12 +111,29 @@ export default function NewBanner() {
         setUploading(false);
       }
 
+      // Upload mobile image if file is selected
+      if (mobileImageFile) {
+        setUploading(true);
+        try {
+          mobileImageUrl = await uploadImage(mobileImageFile);
+          setFormData({ ...formData, mobileImage: mobileImageUrl });
+        } catch (error) {
+          console.error('Error uploading mobile image:', error);
+          alert('Failed to upload mobile image');
+          setUploading(false);
+          setLoading(false);
+          return;
+        }
+        setUploading(false);
+      }
+
       const res = await fetch('/api/banners', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
           image: imageUrl,
+          mobileImage: mobileImageUrl,
           order: formData.order ? parseInt(formData.order) : undefined,
           startDate: formData.startDate ? new Date(formData.startDate) : undefined,
           endDate: formData.endDate ? new Date(formData.endDate) : undefined,
@@ -133,14 +175,15 @@ export default function NewBanner() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Title (Bangla) *
+                Title (Bangla) {formData.position !== 'hero-carousel' && '*'}
               </label>
               <input
                 type="text"
-                required
+                required={formData.position !== 'hero-carousel'}
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder={formData.position === 'hero-carousel' ? 'Optional for carousel' : ''}
               />
             </div>
 
@@ -153,6 +196,7 @@ export default function NewBanner() {
                 value={formData.title_en}
                 onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder={formData.position === 'hero-carousel' ? 'Optional for carousel' : ''}
               />
             </div>
 
@@ -168,8 +212,6 @@ export default function NewBanner() {
               >
                 <option value="home">Home (General)</option>
                 <option value="hero-carousel">Hero - Left Carousel</option>
-                <option value="hero-right-top">Hero - Right Top</option>
-                <option value="hero-right-bottom">Hero - Right Bottom</option>
                 <option value="featured-collections">Featured Collections</option>
                 <option value="category">Category</option>
                 <option value="product">Product</option>
@@ -216,7 +258,7 @@ export default function NewBanner() {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Banner Image *
+                Banner Image (Desktop) *
               </label>
               <input
                 type="file"
@@ -226,9 +268,32 @@ export default function NewBanner() {
               />
               {imagePreview && (
                 <div className="mt-2">
+                  <p className="text-xs text-gray-500 mb-1">Desktop Preview:</p>
                   <img
                     src={imagePreview}
-                    alt="Preview"
+                    alt="Desktop Preview"
+                    className="w-48 h-32 object-cover rounded-lg border border-gray-200"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Banner Image (Mobile)
+              </label>
+              <input
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                onChange={handleMobileImageChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+              />
+              {mobileImagePreview && (
+                <div className="mt-2">
+                  <p className="text-xs text-gray-500 mb-1">Mobile Preview:</p>
+                  <img
+                    src={mobileImagePreview}
+                    alt="Mobile Preview"
                     className="w-48 h-32 object-cover rounded-lg border border-gray-200"
                   />
                 </div>
@@ -251,13 +316,15 @@ export default function NewBanner() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description (Bangla)
+              Description (Bangla) {formData.position !== 'hero-carousel' && '*'}
             </label>
             <textarea
               rows={3}
+              required={formData.position !== 'hero-carousel'}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder={formData.position === 'hero-carousel' ? 'Optional for carousel' : ''}
             />
           </div>
 
@@ -270,6 +337,7 @@ export default function NewBanner() {
               value={formData.description_en}
               onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder={formData.position === 'hero-carousel' ? 'Optional for carousel' : ''}
             />
           </div>
 

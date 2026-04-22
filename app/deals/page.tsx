@@ -31,10 +31,25 @@ export default function DealsPage() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
+  const [allPagesBanner, setAllPagesBanner] = useState<any>(null);
 
   useEffect(() => {
     fetchDeals();
+    fetchAllPagesBanner();
   }, []);
+
+  const fetchAllPagesBanner = async () => {
+    try {
+      const res = await fetch('/api/banners?isActive=true&position=all');
+      const data = await res.json();
+      const banners = data.banners || [];
+      if (banners.length > 0) {
+        setAllPagesBanner(banners[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching all pages banner:', error);
+    }
+  };
 
   const fetchDeals = async () => {
     try {
@@ -114,16 +129,30 @@ export default function DealsPage() {
       <Header />
       
       {/* Header */}
-      <section className="bg-brand-green-dark py-20 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-8 text-center space-y-6">
-          <h1 className="text-4xl md:text-6xl font-black text-white italic">
-            বিশেষ <span className="text-emerald-300">অফার</span> ও ছাড়
-          </h1>
-          <p className="text-emerald-50/70 text-lg italic">
-            সেরা পণ্যের উপর বিশেষ ছাড় এবং অফার উপভোগ করুন
-          </p>
-        </div>
-      </section>
+      {allPagesBanner ? (
+        <Link href={allPagesBanner.link || '/deals'} className="block w-full h-48 md:h-64 bg-slate-100 rounded-[2rem] md:rounded-[4rem] mb-8 relative overflow-hidden">
+          <div className="absolute inset-0">
+            <Image
+              src={allPagesBanner.image}
+              alt={allPagesBanner.title}
+              fill
+              className="object-cover"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        </Link>
+      ) : (
+        <section className="bg-brand-green-dark py-20 relative overflow-hidden">
+          <div className="max-w-7xl mx-auto px-8 text-center space-y-6">
+            <h1 className="text-4xl md:text-6xl font-black text-white italic">
+              বিশেষ <span className="text-emerald-300">অফার</span> ও ছাড়
+            </h1>
+            <p className="text-emerald-50/70 text-lg italic">
+              সেরা পণ্যের উপর বিশেষ ছাড় এবং অফার উপভোগ করুন
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* Active Deals */}
       <section className="py-20 max-w-7xl mx-auto px-8">

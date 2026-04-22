@@ -7,14 +7,30 @@ import ProductCard from '@/components/ProductCard';
 import { motion } from 'motion/react';
 import { Flame, Star, Zap, Sparkles, Percent, Gift, Clock, Truck } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function OffersPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [allPagesBanner, setAllPagesBanner] = useState<any>(null);
 
   useEffect(() => {
     fetchProducts();
+    fetchAllPagesBanner();
   }, []);
+
+  const fetchAllPagesBanner = async () => {
+    try {
+      const res = await fetch('/api/banners?isActive=true&position=all');
+      const data = await res.json();
+      const banners = data.banners || [];
+      if (banners.length > 0) {
+        setAllPagesBanner(banners[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching all pages banner:', error);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -51,36 +67,50 @@ export default function OffersPage() {
       <Header />
       
       {/* Premium Hero Section */}
-      <section className="bg-brand-green-dark py-20 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 bg-[url('https://picsum.photos/seed/offers/1920/1080')] bg-cover bg-center mix-blend-overlay" />
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-emerald-500/20 rounded-full blur-[120px]" />
-        
-        <div className="max-w-5xl mx-auto px-8 text-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="inline-block bg-brand-red px-6 py-2 rounded-full text-xs font-black text-white uppercase tracking-[0.3em] mb-8 animate-pulse shadow-lg shadow-brand-red/20"
-          >
-            Limited Time Offers
-          </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-4xl md:text-7xl font-black text-white italic mb-10 leading-tight"
-          >
-            সেরা পণ্যে <span className="text-emerald-300 underline underline-offset-8 decoration-white/20">সেরা অফার!</span>
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-emerald-50/80 text-lg md:text-2xl max-w-3xl mx-auto leading-relaxed font-medium italic"
-          >
-            আমাদের প্রিমিয়াম কোয়ালিটি পণ্যের ওপর পান আকর্ষণীয় ডিসকাউন্ট এবং গিফট। এখনই অর্ডার করুন এবং সাশ্রয় করুন।
-          </motion.p>
-        </div>
-      </section>
+      {allPagesBanner ? (
+        <Link href={allPagesBanner.link || '/offers'} className="block w-full h-48 md:h-64 bg-slate-100 rounded-[2rem] md:rounded-[4rem] mb-8 relative overflow-hidden">
+          <div className="absolute inset-0">
+            <Image
+              src={allPagesBanner.image}
+              alt={allPagesBanner.title}
+              fill
+              className="object-cover"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        </Link>
+      ) : (
+        <section className="bg-brand-green-dark py-20 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10 bg-[url('https://picsum.photos/seed/offers/1920/1080')] bg-cover bg-center mix-blend-overlay" />
+          <div className="absolute -top-24 -left-24 w-96 h-96 bg-emerald-500/20 rounded-full blur-[120px]" />
+
+          <div className="max-w-5xl mx-auto px-8 text-center relative z-10">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="inline-block bg-brand-red px-6 py-2 rounded-full text-xs font-black text-white uppercase tracking-[0.3em] mb-8 animate-pulse shadow-lg shadow-brand-red/20"
+            >
+              Limited Time Offers
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-4xl md:text-7xl font-black text-white italic mb-10 leading-tight"
+            >
+              সেরা পণ্যে <span className="text-emerald-300 underline underline-offset-8 decoration-white/20">সেরা অফার!</span>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-emerald-50/80 text-lg md:text-2xl max-w-3xl mx-auto leading-relaxed font-medium italic"
+            >
+              আমাদের প্রিমিয়াম কোয়ালিটি পণ্যের ওপর পান আকর্ষণীয় ডিসকাউন্ট এবং গিফট। এখনই অর্ডার করুন এবং সাশ্রয় করুন।
+            </motion.p>
+          </div>
+        </section>
+      )}
 
       {/* Featured Promo Cards */}
       <section className="py-16 md:-mt-16 relative z-20 px-4">

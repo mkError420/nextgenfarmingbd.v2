@@ -7,6 +7,8 @@ import ProductCard from '@/components/ProductCard';
 import { Filter, SlidersHorizontal, ChevronDown, LayoutGrid, List, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
 
 function ShopContent() {
   const searchParams = useSearchParams();
@@ -22,11 +24,26 @@ function ShopContent() {
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [products, setProducts] = useState<any[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
+  const [allPagesBanner, setAllPagesBanner] = useState<any>(null);
 
   useEffect(() => {
     fetchCategories();
     fetchProducts();
+    fetchAllPagesBanner();
   }, []);
+
+  const fetchAllPagesBanner = async () => {
+    try {
+      const res = await fetch('/api/banners?isActive=true&position=all');
+      const data = await res.json();
+      const banners = data.banners || [];
+      if (banners.length > 0) {
+        setAllPagesBanner(banners[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching all pages banner:', error);
+    }
+  };
 
   const fetchCategories = async () => {
     try {
@@ -116,25 +133,39 @@ function ShopContent() {
       <Header />
       
       {/* Premium Shop Header */}
-      <div className="bg-brand-green-dark py-16 md:py-24 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5">
-           <LayoutGrid size={400} className="absolute -top-20 -right-20 rotate-12" />
+      {allPagesBanner ? (
+        <Link href={allPagesBanner.link || '/shop'} className="block w-full h-48 md:h-64 bg-slate-100 rounded-[2rem] md:rounded-[4rem] mb-8 relative overflow-hidden">
+          <div className="absolute inset-0">
+            <Image
+              src={allPagesBanner.image}
+              alt={allPagesBanner.title}
+              fill
+              className="object-cover"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        </Link>
+      ) : (
+        <div className="bg-brand-green-dark py-16 md:py-24 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-5">
+             <LayoutGrid size={400} className="absolute -top-20 -right-20 rotate-12" />
+          </div>
+          <div className="max-w-7xl mx-auto px-8 relative z-10 text-center">
+             <motion.div
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               className="inline-block bg-white/10 backdrop-blur-md px-6 py-2 rounded-full text-xs font-black text-emerald-300 uppercase tracking-[0.3em] mb-6"
+             >
+               Our Collection
+             </motion.div>
+             <h1 className="text-4xl md:text-6xl font-black text-white italic mb-6 tracking-tight">সব পণ্য এক জায়গায়</h1>
+             <p className="text-emerald-50/70 max-w-2xl mx-auto italic font-medium leading-relaxed">
+               নেক্সটজেন FarmingBD-এ আপনার প্রয়োজনীয় সকল অর্গানিক এবং প্রিমিয়াম পণ্য সেরা দামে সংগ্রহ করুন।
+               আমরা সরাসরি কৃষকের মাঠ থেকে আপনার কাছে পণ্য পৌঁছে দিই।
+             </p>
+          </div>
         </div>
-        <div className="max-w-7xl mx-auto px-8 relative z-10 text-center">
-           <motion.div
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             className="inline-block bg-white/10 backdrop-blur-md px-6 py-2 rounded-full text-xs font-black text-emerald-300 uppercase tracking-[0.3em] mb-6"
-           >
-             Our Collection
-           </motion.div>
-           <h1 className="text-4xl md:text-6xl font-black text-white italic mb-6 tracking-tight">সব পণ্য এক জায়গায়</h1>
-           <p className="text-emerald-50/70 max-w-2xl mx-auto italic font-medium leading-relaxed">
-             নেক্সটজেন FarmingBD-এ আপনার প্রয়োজনীয় সকল অর্গানিক এবং প্রিমিয়াম পণ্য সেরা দামে সংগ্রহ করুন। 
-             আমরা সরাসরি কৃষকের মাঠ থেকে আপনার কাছে পণ্য পৌঁছে দিই।
-           </p>
-        </div>
-      </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-8 py-12">
         <div className="flex flex-col lg:flex-row gap-12">

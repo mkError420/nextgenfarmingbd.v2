@@ -8,7 +8,7 @@ import BannerCarousel from '@/components/BannerCarousel';
 import Image from 'next/image';
 import ProductCard from '@/components/ProductCard';
 import Footer from '@/components/Footer';
-import { Truck, ShieldCheck, RefreshCw, Headphones, Flame, Star, Send, PhoneCall, ArrowRight, Quote, Zap, Sparkles, ShoppingBag } from 'lucide-react';
+import { Truck, ShieldCheck, RefreshCw, Headphones, Flame, Star, Send, PhoneCall, ArrowRight, Quote, Zap, Sparkles, ShoppingBag, Tag, Copy, Check } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'motion/react';
 
@@ -16,13 +16,47 @@ export default function Home() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [featuredBanner, setFeaturedBanner] = useState<any>(null);
+  const [deals, setDeals] = useState<any[]>([]);
+  const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
     fetchFeaturedBanner();
+    fetchDeals();
   }, []);
+
+  const fetchDeals = async () => {
+    try {
+      const res = await fetch('/api/deals?limit=10');
+      const data = await res.json();
+      const activeDeals = (data.deals || []).filter((deal: any) => {
+        const now = new Date();
+        const startDate = new Date(deal.startDate);
+        const endDate = new Date(deal.endDate);
+        return startDate <= now && endDate >= now;
+      });
+      setDeals(activeDeals);
+    } catch (error) {
+      console.error('Error fetching deals:', error);
+    }
+  };
+
+  const handleCopyCoupon = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCoupon(code);
+    setTimeout(() => setCopiedCoupon(null), 2000);
+  };
+
+  const handleUseCoupon = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCoupon(code);
+    localStorage.setItem('pendingCoupon', code);
+    setTimeout(() => {
+      window.location.href = '/checkout';
+    }, 500);
+  };
 
   const fetchProducts = async () => {
     try {
@@ -286,6 +320,61 @@ export default function Home() {
 
             {/* Right Sidebar Widget */}
             <aside className="lg:col-span-3 space-y-8">
+              {/* Deal/Coupon Widget */}
+              {deals.length > 0 && (
+                <div className="bg-gradient-to-br from-brand-green to-emerald-600 text-white p-8 rounded-none shadow-xl relative overflow-hidden group">
+                  <div className="relative z-10 space-y-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-white/20 rounded-none flex items-center justify-center text-white">
+                        <Tag size={24} />
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-black italic">বিশেষ অফার</h4>
+                        <p className="text-emerald-50/70 text-xs mt-1 italic font-bold">কুপন কোড ব্যবহার করে ডিসকাউন্ট পান</p>
+                      </div>
+                    </div>
+                    
+                    {deals.slice(0, 1).map((deal) => (
+                      <div key={deal._id} className="space-y-4">
+                        <div className="bg-white/10 rounded-xl p-4 space-y-2">
+                          <p className="text-sm font-bold italic">{deal.title}</p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-2xl font-black">
+                              {deal.discountType === 'percentage' ? `${deal.discountValue}%` : `৳${deal.discountValue}`}
+                            </span>
+                            <span className="text-xs font-black bg-white/20 px-3 py-1 rounded-full">
+                              ছাড়
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {deal.code && (
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-white/20 border border-white/30 rounded-xl px-4 py-3 flex items-center justify-between">
+                              <span className="font-black text-sm">{deal.code}</span>
+                              <button
+                                onClick={() => handleCopyCoupon(deal.code!)}
+                                className="text-white hover:text-emerald-200 transition-colors"
+                              >
+                                {copiedCoupon === deal.code ? <Check size={18} /> : <Copy size={18} />}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <button
+                          onClick={() => handleUseCoupon(deal.code!)}
+                          className="w-full bg-white text-brand-green-dark py-3 rounded-xl font-black text-sm hover:bg-emerald-50 transition-all"
+                        >
+                          ব্যবহার করুন
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
+                </div>
+              )}
+
               {/* Newsletter Widget */}
               <div className="bg-white p-8 rounded-none shadow-xl border border-emerald-50 relative overflow-hidden group">
                 <div className="relative z-10 space-y-6">

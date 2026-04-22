@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronRight, ArrowRight, Sparkles, ShieldCheck, Leaf, ShoppingBag, Plus, Tag, Loader2 } from 'lucide-react';
+import { ChevronRight, ArrowRight, Sparkles, ShieldCheck, Leaf, ShoppingBag, Plus, Tag, Loader2, Copy, Check } from 'lucide-react';
 
 interface Banner {
   _id: string;
@@ -25,8 +25,11 @@ export default function Hero() {
   const [carouselBanners, setCarouselBanners] = useState<Banner[]>([]);
   const [rightTopBanner, setRightTopBanner] = useState<Banner | null>(null);
   const [rightBottomBanner, setRightBottomBanner] = useState<Banner | null>(null);
+  const [latestDeal, setLatestDeal] = useState<any>(null);
+  const [latestProduct, setLatestProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -41,6 +44,8 @@ export default function Hero() {
 
   useEffect(() => {
     fetchBanners();
+    fetchLatestDeal();
+    fetchLatestProduct();
   }, []);
 
   const fetchBanners = async () => {
@@ -48,20 +53,20 @@ export default function Hero() {
       const res = await fetch('/api/banners?isActive=true');
       const data = await res.json();
       const banners = data.banners || [];
-      
+
       // Filter banners by position
       const carousel = banners
         .filter((b: Banner) => b.position === 'hero-carousel')
         .sort((a: Banner, b: Banner) => a.order - b.order);
-      
+
       const rightTop = banners
         .filter((b: Banner) => b.position === 'hero-right-top')
         .sort((a: Banner, b: Banner) => a.order - b.order)[0] || null;
-      
+
       const rightBottom = banners
         .filter((b: Banner) => b.position === 'hero-right-bottom')
         .sort((a: Banner, b: Banner) => a.order - b.order)[0] || null;
-      
+
       setCarouselBanners(carousel);
       setRightTopBanner(rightTop);
       setRightBottomBanner(rightBottom);
@@ -70,6 +75,53 @@ export default function Hero() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchLatestDeal = async () => {
+    try {
+      const res = await fetch('/api/deals?limit=1');
+      const data = await res.json();
+      const deals = data.deals || [];
+      const activeDeals = deals.filter((deal: any) => {
+        const now = new Date();
+        const startDate = new Date(deal.startDate);
+        const endDate = new Date(deal.endDate);
+        return startDate <= now && endDate >= now;
+      });
+      if (activeDeals.length > 0) {
+        setLatestDeal(activeDeals[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching latest deal:', error);
+    }
+  };
+
+  const fetchLatestProduct = async () => {
+    try {
+      const res = await fetch('/api/products?limit=1');
+      const data = await res.json();
+      const products = data.products || [];
+      if (products.length > 0) {
+        setLatestProduct(products[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching latest product:', error);
+    }
+  };
+
+  const handleCopyCoupon = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCoupon(code);
+    setTimeout(() => setCopiedCoupon(null), 2000);
+  };
+
+  const handleUseCoupon = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCoupon(code);
+    localStorage.setItem('pendingCoupon', code);
+    setTimeout(() => {
+      window.location.href = '/checkout';
+    }, 500);
   };
 
   useEffect(() => {
@@ -221,100 +273,117 @@ export default function Hero() {
         
         {/* Right Side: Promo Banners */}
         <div className="md:col-span-4 flex flex-col gap-6 h-full min-h-[350px] md:min-h-0">
-          {/* Top Banner */}
-          <Link href={rightTopBanner?.link || '/offers'} className="flex-1 bg-gradient-to-br from-[#fff7ed] to-[#ffedd5] rounded-[2rem] p-6 relative overflow-hidden group border border-orange-100 shadow-sm hover:shadow-xl transition-all flex flex-col justify-center">
-            {rightTopBanner ? (
+          {/* Top Banner - Latest Deal */}
+          <div className="flex-1 bg-gradient-to-br from-brand-green to-emerald-600 rounded-[2rem] p-6 relative overflow-hidden group border border-emerald-100 shadow-sm hover:shadow-xl transition-all flex flex-col justify-center">
+            {latestDeal ? (
               <>
-                <div className="absolute inset-0 opacity-30">
-                  <Image 
-                    src={isMobile && rightTopBanner.mobileImage ? rightTopBanner.mobileImage : rightTopBanner.image}
-                    alt={rightTopBanner.title}
-                    fill
-                    className="object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
                 <div className="relative z-10 space-y-3 md:space-y-4">
-                  <span className="bg-orange-500 text-white text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-widest inline-flex items-center gap-1.5 shadow-lg border border-orange-400 w-fit">
-                     <Tag size={12} /> Special Offer
+                  <span className="bg-white/20 text-white text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-widest inline-flex items-center gap-1.5 shadow-lg border border-white/30 w-fit">
+                     <Tag size={12} /> বিশেষ অফার
                   </span>
-                  <h3 className="text-2xl md:text-3xl font-black text-orange-950 italic leading-tight group-hover:scale-105 transition-transform origin-left">
-                    {rightTopBanner.title}<br />
-                    {rightTopBanner.title_en && <span className="text-orange-600 drop-shadow-sm">{rightTopBanner.title_en}</span>}
+                  <h3 className="text-xl md:text-2xl font-black text-white italic leading-tight group-hover:scale-105 transition-transform origin-left">
+                    {latestDeal.title}
                   </h3>
-                  {rightTopBanner.description && (
-                    <div className="text-orange-800/80 text-xs md:text-sm font-black italic flex items-center gap-2 group-hover:translate-x-2 transition-transform w-fit bg-orange-500/10 px-4 py-2 rounded-xl">
-                      {rightTopBanner.description} <ArrowRight size={16} />
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl font-black text-white">
+                      {latestDeal.discountType === 'percentage' ? `${latestDeal.discountValue}%` : `৳${latestDeal.discountValue}`}
+                    </span>
+                    <span className="text-white/80 text-sm font-black">ছাড়</span>
+                  </div>
+                  {latestDeal.code && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-white/20 border border-white/30 rounded-xl px-4 py-2.5 flex items-center justify-between">
+                        <span className="font-black text-sm text-white">{latestDeal.code}</span>
+                        <button
+                          onClick={() => handleCopyCoupon(latestDeal.code!)}
+                          className="text-white hover:text-emerald-200 transition-colors"
+                        >
+                          {copiedCoupon === latestDeal.code ? <Check size={16} /> : <Copy size={16} />}
+                        </button>
+                      </div>
                     </div>
                   )}
+                  <button
+                    onClick={() => handleUseCoupon(latestDeal.code!)}
+                    className="w-full bg-white text-brand-green-dark py-2.5 rounded-xl font-black text-sm hover:bg-emerald-50 transition-all"
+                  >
+                    ব্যবহার করুন
+                  </button>
                 </div>
               </>
             ) : (
               <>
                 <div className="relative z-10 space-y-3 md:space-y-4">
-                  <span className="bg-orange-500 text-white text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-widest inline-flex items-center gap-1.5 shadow-lg border border-orange-400 w-fit">
-                     <Tag size={12} /> Super Sale
+                  <span className="bg-white/20 text-white text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-widest inline-flex items-center gap-1.5 shadow-lg border border-white/30 w-fit">
+                     <Tag size={12} /> বিশেষ অফার
                   </span>
-                  <h3 className="text-2xl md:text-3xl font-black text-orange-950 italic leading-tight group-hover:scale-105 transition-transform origin-left">
-                    গ্রীষ্মের সেরা অফার!<br />
-                    <span className="text-orange-600 drop-shadow-sm">৫০% পর্যন্ত ছাড়</span>
+                  <h3 className="text-xl md:text-2xl font-black text-white italic leading-tight group-hover:scale-105 transition-transform origin-left">
+                    বর্তমানে কোনো অফার নেই
                   </h3>
-                  <div className="text-orange-800/80 text-xs md:text-sm font-black italic flex items-center gap-2 group-hover:translate-x-2 transition-transform w-fit bg-orange-500/10 px-4 py-2 rounded-xl">
-                    বিস্তারিত দেখুন <ArrowRight size={16} />
-                  </div>
-                </div>
-                <div className="absolute -right-4 -bottom-4 w-40 h-40 md:w-48 md:h-48 opacity-80 group-hover:opacity-100 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500">
-                   <Image src="https://picsum.photos/seed/basket/400/400" alt="Sale" fill className="object-contain drop-shadow-2xl" referrerPolicy="no-referrer" />
+                  <Link href="/deals" className="text-white/80 text-xs md:text-sm font-black italic flex items-center gap-2 group-hover:translate-x-2 transition-transform w-fit bg-white/10 px-4 py-2 rounded-xl">
+                    সব অফার দেখুন <ArrowRight size={16} />
+                  </Link>
                 </div>
               </>
             )}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/60 blur-3xl rounded-full" />
-          </Link>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 blur-3xl rounded-full" />
+          </div>
 
-          {/* Bottom Banner */}
-          <Link href={rightBottomBanner?.link || '/shop'} className="flex-1 bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] rounded-[2rem] p-6 relative overflow-hidden group border border-green-100 shadow-sm hover:shadow-xl transition-all flex flex-col justify-center">
-            {rightBottomBanner ? (
+          {/* Bottom Banner - Latest Product */}
+          <Link href={latestProduct ? `/shop/${latestProduct._id}` : '/shop'} className="flex-1 bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] rounded-[2rem] p-6 relative overflow-hidden group border border-green-100 shadow-sm hover:shadow-xl transition-all flex flex-col justify-center">
+            {latestProduct ? (
               <>
-                <div className="absolute inset-0 opacity-30">
-                  <Image 
-                    src={isMobile && rightBottomBanner.mobileImage ? rightBottomBanner.mobileImage : rightBottomBanner.image}
-                    alt={rightBottomBanner.title}
-                    fill
-                    className="object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-                <div className="relative z-10 space-y-3 md:space-y-4">
-                  <span className="bg-brand-green text-white text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-widest inline-flex items-center gap-1.5 shadow-lg border border-emerald-500 w-fit">
-                     <Leaf size={12} /> Fresh Arrival
-                  </span>
-                  <h3 className="text-2xl md:text-3xl font-black text-emerald-950 italic leading-tight group-hover:scale-105 transition-transform origin-left">
-                    {rightBottomBanner.title}<br />
-                    {rightBottomBanner.title_en && <span className="text-brand-green drop-shadow-sm">{rightBottomBanner.title_en}</span>}
-                  </h3>
-                  {rightBottomBanner.description && (
-                    <div className="text-emerald-800/80 text-xs md:text-sm font-black italic flex items-center gap-2 group-hover:translate-x-2 transition-transform w-fit bg-brand-green/10 px-4 py-2 rounded-xl">
-                      {rightBottomBanner.description} <ArrowRight size={16} />
-                    </div>
+                <div className="absolute inset-0 opacity-20">
+                  {latestProduct.images && latestProduct.images.length > 0 ? (
+                    <Image
+                      src={latestProduct.images[0]}
+                      alt={latestProduct.name}
+                      fill
+                      className="object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <Image
+                      src="https://picsum.photos/seed/product/400/400"
+                      alt="Product"
+                      fill
+                      className="object-cover"
+                      referrerPolicy="no-referrer"
+                    />
                   )}
                 </div>
-              </>
-            ) : (
-              <>
                 <div className="relative z-10 space-y-3 md:space-y-4">
                   <span className="bg-brand-green text-white text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-widest inline-flex items-center gap-1.5 shadow-lg border border-emerald-500 w-fit">
-                     <Leaf size={12} /> Fresh Arrival
+                     <Leaf size={12} /> নতুন পণ্য
                   </span>
-                  <h3 className="text-2xl md:text-3xl font-black text-emerald-950 italic leading-tight group-hover:scale-105 transition-transform origin-left">
-                    সরাসরি বাগান থেকে<br />
-                    <span className="text-brand-green drop-shadow-sm">তাজা ফলমূল</span>
+                  <h3 className="text-xl md:text-2xl font-black text-emerald-950 italic leading-tight group-hover:scale-105 transition-transform origin-left">
+                    {latestProduct.name}
                   </h3>
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl font-black text-brand-green">
+                      ৳{latestProduct.price}
+                    </span>
+                    {latestProduct.oldPrice && (
+                      <span className="text-emerald-800/60 text-sm line-through">৳{latestProduct.oldPrice}</span>
+                    )}
+                  </div>
                   <div className="text-emerald-800/80 text-xs md:text-sm font-black italic flex items-center gap-2 group-hover:translate-x-2 transition-transform w-fit bg-brand-green/10 px-4 py-2 rounded-xl">
                     এখনই কিনুন <ArrowRight size={16} />
                   </div>
                 </div>
-                <div className="absolute -right-4 -bottom-4 w-40 h-40 md:w-48 md:h-48 opacity-90 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500">
-                   <Image src="https://picsum.photos/seed/fruits2/400/400" alt="Fresh Fruits" fill className="object-cover rounded-full drop-shadow-2xl mix-blend-multiply" referrerPolicy="no-referrer" />
+              </>
+            ) : (
+              <>
+                <div className="relative z-10 space-y-3 md:space-y-4">
+                  <span className="bg-brand-green text-white text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-widest inline-flex items-center gap-1.5 shadow-lg border border-emerald-500 w-fit">
+                     <Leaf size={12} /> নতুন পণ্য
+                  </span>
+                  <h3 className="text-xl md:text-2xl font-black text-emerald-950 italic leading-tight group-hover:scale-105 transition-transform origin-left">
+                    বর্তমানে কোনো পণ্য নেই
+                  </h3>
+                  <div className="text-emerald-800/80 text-xs md:text-sm font-black italic flex items-center gap-2 group-hover:translate-x-2 transition-transform w-fit bg-brand-green/10 px-4 py-2 rounded-xl">
+                    শপিং করুন <ArrowRight size={16} />
+                  </div>
                 </div>
               </>
             )}

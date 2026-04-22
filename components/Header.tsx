@@ -14,8 +14,23 @@ export default function Header() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [settings, setSettings] = useState<any>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const mobileSearchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch('/api/settings');
+      const data = await res.json();
+      setSettings(data.settings);
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    }
+  };
 
   const searchResults = React.useMemo(() => {
     if (searchQuery.trim().length > 0) {
@@ -68,10 +83,20 @@ export default function Header() {
         {/* Logo */}
         <Link href="/" className="flex-shrink-0 group">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-brand-green rounded-full flex items-center justify-center text-white">
-              <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-white rounded-sm transform rotate-45 group-hover:rotate-0 transition-transform duration-300"></div>
-            </div>
-            <span className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold text-brand-green-dark tracking-tight italic whitespace-nowrap">নেক্সটজেন FarmingBD</span>
+            {settings?.logo ? (
+              <img
+                src={settings.logo}
+                alt={settings.siteName || 'Logo'}
+                className="w-8 h-8 md:w-10 md:h-10 object-contain rounded-[22px]"
+              />
+            ) : (
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-brand-green rounded-full flex items-center justify-center text-white">
+                <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-white rounded-sm transform rotate-45 group-hover:rotate-0 transition-transform duration-300"></div>
+              </div>
+            )}
+            <span className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold text-brand-green-dark tracking-tight italic whitespace-nowrap">
+              {settings?.siteName || 'নেক্সটজেন FarmingBD'}
+            </span>
           </div>
         </Link>
 

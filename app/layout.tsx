@@ -5,6 +5,7 @@ import { CartProvider } from '@/lib/CartContext';
 import { AuthProvider } from '@/lib/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import CartDrawer from '@/components/CartDrawer';
+import Favicon from '@/components/Favicon';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -27,6 +28,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="en" className={`${inter.variable} ${bengali.variable}`}>
       <body suppressHydrationWarning className="font-sans">
+        <Favicon />
         <AuthProvider>
           <CartProvider>
             {children}

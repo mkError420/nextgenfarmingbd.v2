@@ -2,15 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Package, 
-  FolderTree, 
-  ShoppingCart, 
-  FileText, 
-  Tag, 
+import {
+  LayoutDashboard,
+  Package,
+  FolderTree,
+  ShoppingCart,
+  FileText,
+  Tag,
   Image as ImageIcon,
   Users,
+  Settings,
   LogOut,
   Menu,
   X
@@ -34,6 +35,7 @@ export default function AdminLayout({
     { name: 'Blogs', href: '/admin/blogs', icon: FileText },
     { name: 'Deals', href: '/admin/deals', icon: Tag },
     { name: 'Banners', href: '/admin/banners', icon: ImageIcon },
+    { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 
   const handleLogout = () => {

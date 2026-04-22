@@ -11,12 +11,13 @@ import {
   Tag,
   Image as ImageIcon,
   Users,
+  MessageSquare,
   Settings,
   LogOut,
   Menu,
   X
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function AdminLayout({
   children,
@@ -25,6 +26,32 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    // Poll for new messages every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+
+    // Listen for custom event to refresh count
+    const handleRefresh = () => fetchUnreadCount();
+    window.addEventListener('refreshUnreadCount', handleRefresh);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('refreshUnreadCount', handleRefresh);
+    };
+  }, []);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await fetch('/api/messages/unread-count');
+      const data = await res.json();
+      setUnreadCount(data.count || 0);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
 
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -35,6 +62,7 @@ export default function AdminLayout({
     { name: 'Blogs', href: '/admin/blogs', icon: FileText },
     { name: 'Deals', href: '/admin/deals', icon: Tag },
     { name: 'Banners', href: '/admin/banners', icon: ImageIcon },
+    { name: 'Messages', href: '/admin/messages', icon: MessageSquare },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 
@@ -71,6 +99,7 @@ export default function AdminLayout({
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             {navigation.map((item) => {
               const isActive = pathname === item.href;
+              const isMessages = item.name === 'Messages';
               return (
                 <Link
                   key={item.name}
@@ -82,7 +111,14 @@ export default function AdminLayout({
                   }`}
                   onClick={() => setSidebarOpen(false)}
                 >
-                  <item.icon className="w-5 h-5 mr-3" />
+                  <div className="relative">
+                    <item.icon className="w-5 h-5 mr-3" />
+                    {isMessages && unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </div>
                   {item.name}
                 </Link>
               );

@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Phone, Mail, MapPin, Clock, MessageCircle, Send, ChevronDown, Facebook, Instagram, Youtube, Twitter } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import toast from 'react-hot-toast';
 
 const faqs = [
   {
@@ -28,6 +29,14 @@ const faqs = [
 export default function ContactPage() {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [settings, setSettings] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -40,6 +49,31 @@ export default function ContactPage() {
       setSettings(data.settings);
     } catch (error) {
       console.error('Error fetching settings:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (res.ok) {
+        toast.success('আপনার বার্তা সফলভাবে পাঠানো হয়েছে!');
+        setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+      } else {
+        toast.error('বার্তা পাঠাতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      }
+    } catch (error) {
+      console.error('Error submitting message:', error);
+      toast.error('বার্তা পাঠাতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -93,27 +127,70 @@ export default function ContactPage() {
                <p className="text-slate-400 font-medium italic text-sm">আমরা সাধারণত ২-৪ ঘণ্টার মধ্যে আপনার উত্তর দেওয়ার চেষ্টা করি।</p>
             </div>
 
-            <form className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">আপনার নাম</label>
-                  <input type="text" className="w-full bg-slate-50/50 border-2 border-slate-50 rounded-2xl py-4 px-6 text-sm focus:border-brand-green outline-none transition-all placeholder:text-slate-300" placeholder="উদা: রকিবুল হাসান" />
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full bg-slate-50/50 border-2 border-slate-50 rounded-2xl py-4 px-6 text-sm focus:border-brand-green outline-none transition-all placeholder:text-slate-300"
+                    placeholder="উদা: রকিবুল হাসান"
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">আপনার ইমেইল/ফোন</label>
-                  <input type="text" className="w-full bg-slate-50/50 border-2 border-slate-50 rounded-2xl py-4 px-6 text-sm focus:border-brand-green outline-none transition-all placeholder:text-slate-300" placeholder="উদা: +৮৮০ ১৬১১-১৩৩৩৬৫" />
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">আপনার ইমেইল</label>
+                  <input
+                    type="text"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full bg-slate-50/50 border-2 border-slate-50 rounded-2xl py-4 px-6 text-sm focus:border-brand-green outline-none transition-all placeholder:text-slate-300"
+                    placeholder="উদা: example@email.com"
+                    required
+                  />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">আপনার ফোন</label>
+                <input
+                  type="text"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full bg-slate-50/50 border-2 border-slate-50 rounded-2xl py-4 px-6 text-sm focus:border-brand-green outline-none transition-all placeholder:text-slate-300"
+                  placeholder="উদা: +৮৮০ ১৬১১-১৩৩৩৬৫"
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">বিষয়</label>
-                <input type="text" className="w-full bg-slate-50/50 border-2 border-slate-50 rounded-2xl py-4 px-6 text-sm focus:border-brand-green outline-none transition-all" />
+                <input
+                  type="text"
+                  value={formData.subject}
+                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  className="w-full bg-slate-50/50 border-2 border-slate-50 rounded-2xl py-4 px-6 text-sm focus:border-brand-green outline-none transition-all"
+                  placeholder="বিষয় লিখুন..."
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">আপনার বার্তা</label>
-                <textarea rows={6} className="w-full bg-slate-50/50 border-2 border-slate-50 rounded-[2rem] py-4 px-6 text-sm focus:border-brand-green outline-none transition-all resize-none" placeholder="বিস্তারিত এখানে লিখুন..."></textarea>
+                <textarea
+                  rows={6}
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  className="w-full bg-slate-50/50 border-2 border-slate-50 rounded-[2rem] py-4 px-6 text-sm focus:border-brand-green outline-none transition-all resize-none"
+                  placeholder="বিস্তারিত এখানে লিখুন..."
+                  required
+                />
               </div>
-              <button className="w-full bg-brand-green-dark text-white py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-3 hover:bg-brand-green transition-all shadow-xl shadow-brand-green/20">
-                Submit <Send size={20} />
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full bg-brand-green-dark text-white py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-3 hover:bg-brand-green transition-all shadow-xl shadow-brand-green/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitting ? 'পাঠানো হচ্ছে...' : 'Submit'} <Send size={20} />
               </button>
             </form>
           </motion.div>

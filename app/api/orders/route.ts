@@ -9,12 +9,22 @@ export async function GET(request: NextRequest) {
     await mongoose.connect(MONGODB_URI);
     
     const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
     const userId = searchParams.get('userId');
     const status = searchParams.get('status');
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    // Build query
+    // If ID is provided, fetch single order
+    if (id) {
+      const order = await Order.findById(id);
+      if (!order) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+      return NextResponse.json({ order });
+    }
+
+    // Build query for multiple orders
     let query: any = {};
     
     if (userId) {
@@ -53,25 +63,97 @@ export async function POST(request: NextRequest) {
     
     const orderData = await request.json();
     
+    console.log('Received order data:', JSON.stringify(orderData, null, 2));
+    
+    // Generate order number if not provided
+    if (!orderData.orderNumber) {
+      orderData.orderNumber = 'ORD' + Date.now() + Math.random().toString(36).substring(2, 7).toUpperCase();
+    }
+    
     // Validate required fields
-    const requiredFields = ['userId', 'items', 'totalAmount', 'shippingAddress', 'paymentMethod'];
+    const requiredFields = ['userId', 'customerName', 'customerPhone', 'items', 'totalAmount', 'shippingAddress', 'paymentMethod'];
     for (const field of requiredFields) {
       if (!orderData[field]) {
+        console.error(`Missing required field: ${field}`);
         return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
       }
     }
 
     // Validate items
     if (!Array.isArray(orderData.items) || orderData.items.length === 0) {
+      console.error('Order must contain at least one item');
       return NextResponse.json({ error: 'Order must contain at least one item' }, { status: 400 });
     }
 
     const order = new Order(orderData);
     await order.save();
     
+    console.log('Order created successfully:', order._id);
     return NextResponse.json(order, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating order:', error);
-    return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    });
+    return NextResponse.json({ 
+      error: 'Failed to create order',
+      details: error.message 
+    }, { status: 500 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    await mongoose.connect(MONGODB_URI);
+    
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
+    }
+    
+    const updateData = await request.json();
+    
+    const order = await Order.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+    
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+    
+    return NextResponse.json(order);
+  } catch (error) {
+    console.error('Error updating order:', error);
+    return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    await mongoose.connect(MONGODB_URI);
+    
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
+    }
+    
+    const order = await Order.findByIdAndDelete(id);
+    
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+    
+    return NextResponse.json({ message: 'Order deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    return NextResponse.json({ error: 'Failed to delete order' }, { status: 500 });
   }
 }

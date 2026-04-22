@@ -6,12 +6,15 @@ export interface IOrderItem {
   name_en: string;
   price: number;
   quantity: number;
-  image: string;
+  image?: string;
 }
 
 export interface IOrder extends Document {
   userId: string;
   orderNumber: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
   items: IOrderItem[];
   totalAmount: number;
   status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
@@ -38,9 +41,19 @@ const OrderSchema: Schema = new Schema({
   },
   orderNumber: {
     type: String,
-    required: true,
     unique: true,
     index: true,
+  },
+  customerName: {
+    type: String,
+    required: true,
+  },
+  customerPhone: {
+    type: String,
+    required: true,
+  },
+  customerEmail: {
+    type: String,
   },
   items: [{
     productId: {
@@ -67,7 +80,6 @@ const OrderSchema: Schema = new Schema({
     },
     image: {
       type: String,
-      required: true,
     },
   }],
   totalAmount: {
@@ -125,12 +137,7 @@ OrderSchema.index({ userId: 1, createdAt: -1 });
 OrderSchema.index({ status: 1 });
 OrderSchema.index({ orderNumber: 1 });
 
-// Generate order number before saving
-OrderSchema.pre('save', function(next: any) {
-  if (!this.orderNumber) {
-    this.orderNumber = 'ORD' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
-  }
-  next();
-});
-
-export default mongoose.models.Order || mongoose.model<IOrder>('Order', OrderSchema);
+// Force model reload to apply schema changes
+delete mongoose.models.Order;
+delete (mongoose.connection.models as any)['Order'];
+export default mongoose.model<IOrder>('Order', OrderSchema);

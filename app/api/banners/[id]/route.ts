@@ -43,9 +43,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Banner not found' }, { status: 404 });
     }
 
-    // Compress image for mobile if image is being updated
+    // Compress image for mobile if image is being updated (temporarily disabled for debugging)
     if (updateData.image && updateData.image !== banner.image) {
-      updateData.mobileImage = await compressForMobile(updateData.image);
+      console.log('Skipping image compression for debugging...');
+      updateData.mobileImage = updateData.image; // Use same image for now
+      // updateData.mobileImage = await compressForMobile(updateData.image);
     }
 
     const updatedBanner = await Banner.findByIdAndUpdate(id, updateData, { new: true });

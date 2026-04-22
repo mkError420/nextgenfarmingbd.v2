@@ -14,7 +14,8 @@ import {
   MapPin, 
   Phone, 
   User,
-  ShoppingBag
+  ShoppingBag,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
@@ -26,6 +27,7 @@ export default function CheckoutPage() {
   const { cart, subtotal, totalItems, clearCart } = useCart();
   const router = useRouter();
   const [isOrdered, setIsOrdered] = useState(false);
+  const [createdOrder, setCreatedOrder] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -42,7 +44,245 @@ export default function CheckoutPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleDownloadReceipt = () => {
+    if (!createdOrder) return;
+    
+    const receiptContent = `
+      <html>
+        <head>
+          <title>Order Receipt - ${createdOrder.orderNumber || createdOrder._id}</title>
+          <style>
+            @media print {
+              body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              @page {
+                margin: 0.5cm;
+                size: A4;
+              }
+              * {
+                page-break-inside: avoid !important;
+                page-break-after: avoid !important;
+                page-break-before: avoid !important;
+              }
+            }
+            body {
+              font-family: Arial, sans-serif;
+              padding: 30px;
+              max-width: 700px;
+              margin: 0 auto;
+              background: #fff;
+              min-height: 100vh;
+            }
+            .header {
+              text-align: center;
+              border-bottom: 3px solid #10b981;
+              padding-bottom: 15px;
+              margin-bottom: 20px;
+            }
+            .header h1 {
+              color: #10b981;
+              margin: 0;
+              font-size: 24px;
+            }
+            .header p {
+              color: #666;
+              margin: 5px 0 0;
+              font-size: 14px;
+            }
+            .order-info {
+              background: #f0fdf4;
+              padding: 15px;
+              border-radius: 10px;
+              margin-bottom: 15px;
+            }
+            .order-info h2 {
+              color: #059669;
+              margin-top: 0;
+              margin-bottom: 10px;
+              font-size: 16px;
+            }
+            .info-row {
+              margin: 8px 0;
+              display: flex;
+              justify-content: space-between;
+              font-size: 13px;
+            }
+            .label {
+              font-weight: bold;
+              color: #374151;
+            }
+            .value {
+              color: #1f2937;
+            }
+            .section {
+              margin: 15px 0;
+              padding: 15px;
+              border: 1px solid #e5e7eb;
+              border-radius: 10px;
+            }
+            .section h2 {
+              color: #059669;
+              margin-top: 0;
+              margin-bottom: 10px;
+              font-size: 16px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 10px;
+            }
+            th, td {
+              border: 1px solid #e5e7eb;
+              padding: 8px;
+              text-align: left;
+              font-size: 12px;
+            }
+            th {
+              background-color: #f0fdf4;
+              color: #059669;
+              font-weight: bold;
+            }
+            .total-section {
+              margin-top: 15px;
+              text-align: right;
+            }
+            .total {
+              font-size: 20px;
+              font-weight: bold;
+              color: #059669;
+            }
+            .status {
+              padding: 5px 12px;
+              border-radius: 20px;
+              display: inline-block;
+              font-size: 12px;
+              font-weight: bold;
+            }
+            .status-pending { background-color: #fef3c7; color: #92400e; }
+            .status-confirmed { background-color: #dbeafe; color: #1e40af; }
+            .status-processing { background-color: #e5e7eb; color: #374151; }
+            .status-shipped { background-color: #d1fae5; color: #065f46; }
+            .status-delivered { background-color: #d1fae5; color: #065f46; }
+            .footer {
+              text-align: center;
+              margin-top: 20px;
+              padding-top: 15px;
+              border-top: 1px solid #e5e7eb;
+              color: #666;
+              font-size: 12px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>🛒 Order Receipt</h1>
+            <p>NextGen Farming BD</p>
+          </div>
+          
+          <div class="order-info">
+            <h2>Order Information</h2>
+            <div class="info-row">
+              <span class="label">Order Number:</span>
+              <span class="value">${createdOrder.orderNumber || createdOrder._id}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Order Date:</span>
+              <span class="value">${new Date(createdOrder.createdAt).toLocaleString()}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Status:</span>
+              <span class="value"><span class="status status-${createdOrder.status}">${createdOrder.status}</span></span>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>Customer Information</h2>
+            <div class="info-row">
+              <span class="label">Name:</span>
+              <span class="value">${createdOrder.customerName}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Phone:</span>
+              <span class="value">${createdOrder.customerPhone}</span>
+            </div>
+            ${createdOrder.customerEmail ? `
+            <div class="info-row">
+              <span class="label">Email:</span>
+              <span class="value">${createdOrder.customerEmail}</span>
+            </div>
+            ` : ''}
+          </div>
+
+          <div class="section">
+            <h2>Shipping Address</h2>
+            <p>${createdOrder.shippingAddress?.street}, ${createdOrder.shippingAddress?.city}, ${createdOrder.shippingAddress?.state}, ${createdOrder.shippingAddress?.zipCode}, ${createdOrder.shippingAddress?.country}</p>
+          </div>
+
+          <div class="section">
+            <h2>Order Items</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Price</th>
+                  <th>Quantity</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${createdOrder.items?.map((item: any) => `
+                  <tr>
+                    <td>${item.name}</td>
+                    <td>৳${item.price}</td>
+                    <td>${item.quantity}</td>
+                    <td>৳${item.price * item.quantity}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <div class="total-section">
+              <div class="total">Total: ৳${createdOrder.totalAmount}</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>Payment Information</h2>
+            <div class="info-row">
+              <span class="label">Payment Method:</span>
+              <span class="value">${createdOrder.paymentMethod}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Payment Status:</span>
+              <span class="value">${createdOrder.paymentStatus}</span>
+            </div>
+          </div>
+
+          ${createdOrder.notes ? `
+          <div class="section">
+            <h2>Order Notes</h2>
+            <p>${createdOrder.notes}</p>
+          </div>
+          ` : ''}
+
+          <div class="footer">
+            <p>Thank you for your order!</p>
+            <p>For any queries, please contact us</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(receiptContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (cart.length === 0) {
@@ -55,15 +295,73 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Simulate order processing
-    toast.loading('অর্ডার প্রসেস করা হচ্ছে...', { duration: 2000 });
+    // Create order via API
+    toast.loading('অর্ডার প্রসেস করা হচ্ছে...', { id: 'order-loading' });
     
-    setTimeout(() => {
+    try {
+      const orderData = {
+        userId: 'guest', // Can be updated to actual user ID when auth is implemented
+        customerName: formData.name,
+        customerPhone: formData.phone,
+        customerEmail: '', // Optional
+        items: cart.map(item => ({
+          productId: item.id,
+          name: item.name,
+          name_en: item.name, // Using same name for now
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image || '' // Handle empty images
+        })),
+        totalAmount: total,
+        shippingAddress: {
+          street: formData.address,
+          city: formData.city,
+          state: formData.city, // Using city as state for simplicity
+          zipCode: '0000', // Default value
+          country: 'Bangladesh'
+        },
+        paymentMethod: 'Cash on Delivery',
+        paymentStatus: 'pending',
+        notes: formData.notes
+      };
+
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        let errorData: any = {};
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          console.error('Failed to parse error as JSON:', errorText);
+        }
+        console.error('Parsed error data:', errorData);
+        throw new Error(errorData.error || errorData.details || errorText || 'Failed to create order');
+      }
+
+      const result = await response.json();
+      
+      toast.dismiss('order-loading');
       setIsOrdered(true);
+      setCreatedOrder(result);
       clearCart();
       toast.success('অর্ডার সফলভাবে সম্পন্ন হয়েছে!');
       window.scrollTo(0, 0);
-    }, 2000);
+    } catch (error) {
+      toast.dismiss('order-loading');
+      console.error('Error creating order:', error);
+      toast.error('অর্ডার তৈরি করতে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+    }
   };
 
   if (isOrdered) {
@@ -89,6 +387,13 @@ export default function CheckoutPage() {
                 আমাদের প্রতিনিধি শীঘ্রই আপনার সাথে যোগাযোগ করবেন অর্ডারটি নিশ্চিত করার জন্য। ততক্ষণ পর্যন্ত আমাদের সাথেই থাকুন।
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                 <button
+                   onClick={handleDownloadReceipt}
+                   className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black italic shadow-lg shadow-emerald-600/10 hover:bg-emerald-700 transition-all"
+                 >
+                    <Download size={20} />
+                    রসিদ ডাউনলোড করুন
+                 </button>
                  <Link href="/shop" className="bg-brand-green text-white px-8 py-4 rounded-2xl font-black italic shadow-lg shadow-brand-green/10 hover:bg-brand-green-dark transition-all">শপিং চালিয়ে যান</Link>
                  <Link href="/" className="bg-slate-100 text-slate-600 px-8 py-4 rounded-2xl font-black italic hover:bg-slate-200 transition-all">হোম পেজ</Link>
               </div>
@@ -270,7 +575,13 @@ export default function CheckoutPage() {
                     {cart.map((item) => (
                       <div key={`${item.id}-${item.variant}`} className="flex gap-4 group">
                          <div className="relative w-16 h-16 rounded-2xl overflow-hidden border border-white/5 flex-shrink-0 bg-white/5">
-                            <Image src={item.image} alt={item.name} fill className="object-cover" referrerPolicy="no-referrer" />
+                            {item.image ? (
+                              <Image src={item.image} alt={item.name} fill className="object-cover" referrerPolicy="no-referrer" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-white/10">
+                                <Package size={24} className="text-white/30" />
+                              </div>
+                            )}
                          </div>
                          <div className="flex-1 min-w-0">
                             <h4 className="font-black text-white italic truncate">{item.name}</h4>

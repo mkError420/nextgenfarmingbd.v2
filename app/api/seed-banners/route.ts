@@ -1,61 +1,20 @@
-const mongoose = require('mongoose');
-const Product = require('../lib/models/Product');
-const Category = require('../lib/models/Category');
-const User = require('../lib/models/User');
-const Banner = require('../lib/models/Banner');
-const { categories, products } = require('../lib/data');
+import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
+import Banner from '@/lib/models/Banner';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://username:password@cluster.mongodb.net/nextgenfarming?retryWrites=true&w=majority';
+const MONGODB_URI = "mongodb://mkrabbanicse_db_user:nobinislam420%40%23%24@ac-ru22zib-shard-00-00.g2korqj.mongodb.net:27017,ac-ru22zib-shard-00-01.g2korqj.mongodb.net:27017,ac-ru22zib-shard-00-02.g2korqj.mongodb.net:27017/nextgenfarming?ssl=true&replicaSet=atlas-jstves-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0";
 
-async function seedDatabase() {
+export async function POST(request: NextRequest) {
   try {
     await mongoose.connect(MONGODB_URI);
     console.log('Connected to MongoDB');
 
-    // Clear existing data
-    await Product.deleteMany({});
-    await Category.deleteMany({});
-    await Banner.deleteMany({});
-    console.log('Cleared existing data');
-
-    // Seed categories
-    const seededCategories = await Category.insertMany(
-      categories.map((cat: any) => ({
-        ...cat,
-        isActive: true
-      }))
-    );
-    console.log(`Seeded ${seededCategories.length} categories`);
-
-    // Seed products
-    const seededProducts = await Product.insertMany(
-      products.map((product: any) => ({
-        ...product,
-        inStock: true,
-        tags: [product.category.toLowerCase().replace(/\s+/g, '-')]
-      }))
-    );
-    console.log(`Seeded ${seededProducts.length} products`);
-
-    // Create admin user
-    const adminUser = new User({
-      name: 'Admin User',
-      email: 'admin@nextgenfarming.com',
-      role: 'admin',
-      emailVerified: true,
-      isActive: true,
-      addresses: [{
-        street: '123 Admin Street',
-        city: 'Dhaka',
-        state: 'Dhaka',
-        zipCode: '1000',
-        country: 'Bangladesh',
-        isDefault: true
-      }]
-    });
+    // Check if banners already exist
+    const existingBanners = await Banner.countDocuments({ position: { $in: ['hero-carousel', 'hero-right-top', 'hero-right-bottom', 'featured-collections'] } });
     
-    await adminUser.save();
-    console.log('Created admin user');
+    if (existingBanners > 0) {
+      return NextResponse.json({ message: 'Demo banners already exist', count: existingBanners });
+    }
 
     // Seed demo banners
     const demoBanners = [
@@ -124,13 +83,13 @@ async function seedDatabase() {
     const seededBanners = await Banner.insertMany(demoBanners);
     console.log(`Seeded ${seededBanners.length} demo banners`);
 
-    console.log('Database seeding completed successfully!');
+    return NextResponse.json({ 
+      message: 'Demo banners seeded successfully', 
+      count: seededBanners.length,
+      banners: seededBanners
+    });
   } catch (error) {
-    console.error('Error seeding database:', error);
-  } finally {
-    await mongoose.disconnect();
+    console.error('Error seeding banners:', error);
+    return NextResponse.json({ error: 'Failed to seed banners', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }
-
-// Run the seeding function
-seedDatabase();

@@ -143,9 +143,9 @@ export default function CheckoutPage() {
 
   // Calculate shipping based on settings and free shipping threshold
   const { shipping, total, shippingCostInsideDhaka, shippingCostOutsideDhaka, freeShippingThreshold, isFreeShipping } = useMemo(() => {
-    const shippingCostInsideDhaka = settings?.shippingCostInsideDhaka || 60;
-    const shippingCostOutsideDhaka = settings?.shippingCostOutsideDhaka || 150;
-    const freeShippingThreshold = settings?.freeShippingThreshold || 5000;
+    const shippingCostInsideDhaka = settings?.shippingCostInsideDhaka ?? 60;
+    const shippingCostOutsideDhaka = settings?.shippingCostOutsideDhaka ?? 150;
+    const freeShippingThreshold = settings?.freeShippingThreshold ?? 5000;
 
     const isInsideDhaka = formData.city === 'Dhaka';
     const isFreeShipping = subtotal >= freeShippingThreshold;

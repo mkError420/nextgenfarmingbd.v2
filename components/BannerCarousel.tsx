@@ -25,6 +25,18 @@ export default function BannerCarousel() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     fetchBanners();
@@ -79,6 +91,7 @@ export default function BannerCarousel() {
   }
 
   const currentBanner = banners[currentIndex];
+  const currentImage = isMobile && currentBanner.mobileImage ? currentBanner.mobileImage : currentBanner.image;
 
   return (
     <div className="relative h-[400px] md:h-[500px] overflow-hidden">
@@ -86,7 +99,7 @@ export default function BannerCarousel() {
         {currentBanner.link ? (
           <Link href={currentBanner.link} className="block h-full">
             <Image
-              src={currentBanner.image}
+              src={currentImage}
               alt={currentBanner.title}
               fill
               className="object-cover"
@@ -96,7 +109,7 @@ export default function BannerCarousel() {
           </Link>
         ) : (
           <Image
-            src={currentBanner.image}
+            src={currentImage}
             alt={currentBanner.title}
             fill
             className="object-cover"

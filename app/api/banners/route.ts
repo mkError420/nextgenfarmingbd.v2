@@ -1,8 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import Banner from '@/lib/models/Banner';
+import sharp from 'sharp';
+import { writeFile, mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
+import path from 'path';
 
 const MONGODB_URI = "mongodb://mkrabbanicse_db_user:nobinislam420%40%23%24@ac-ru22zib-shard-00-00.g2korqj.mongodb.net:27017,ac-ru22zib-shard-00-01.g2korqj.mongodb.net:27017,ac-ru22zib-shard-00-02.g2korqj.mongodb.net:27017/nextgenfarming?ssl=true&replicaSet=atlas-jstves-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0";
+
+// Helper function to compress image for mobile
+const compressForMobile = async (imagePath: string): Promise<string> => {
+  try {
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+    const parsedPath = path.parse(imagePath);
+    const mobileFilename = `${parsedPath.name}-mobile${parsedPath.ext}`;
+    const mobilePath = path.join(uploadsDir, mobileFilename);
+    
+    // Compress for mobile: resize to max width 768px, quality 70%
+    await sharp(path.join(process.cwd(), 'public', imagePath))
+      .resize(768, null, { 
+        withoutEnlargement: true,
+        fit: 'inside'
+      })
+      .jpeg({ quality: 70 })
+      .toFile(mobilePath);
+    
+    return `/uploads/${mobileFilename}`;
+  } catch (error) {
+    console.error('Error compressing image for mobile:', error);
+    return imagePath; // Return original if compression fails
+  }
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -53,6 +81,11 @@ export async function POST(request: NextRequest) {
       if (!bannerData[field]) {
         return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
       }
+    }
+    
+    // Compress image for mobile
+    if (bannerData.image) {
+      bannerData.mobileImage = await compressForMobile(bannerData.image);
     }
     
     // Set default order if not provided

@@ -8,7 +8,7 @@ export interface IBanner extends Document {
   image: string;
   mobileImage?: string;
   link?: string;
-  position: 'home' | 'category' | 'product' | 'all';
+  position: 'home' | 'category' | 'product' | 'all' | 'hero-carousel' | 'hero-right-top' | 'hero-right-bottom' | 'featured-collections';
   order: number;
   startDate?: Date;
   endDate?: Date;
@@ -46,7 +46,7 @@ const BannerSchema = new Schema<IBanner>(
     },
     position: {
       type: String,
-      enum: ['home', 'category', 'product', 'all'],
+      enum: ['home', 'category', 'product', 'all', 'hero-carousel', 'hero-right-top', 'hero-right-bottom', 'featured-collections'],
       default: 'home'
     },
     order: {

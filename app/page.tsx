@@ -15,11 +15,13 @@ import { motion } from 'motion/react';
 export default function Home() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [featuredBanner, setFeaturedBanner] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+    fetchFeaturedBanner();
   }, []);
 
   const fetchProducts = async () => {
@@ -41,6 +43,19 @@ export default function Home() {
       setCategories(data.categories || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchFeaturedBanner = async () => {
+    try {
+      const res = await fetch('/api/banners?isActive=true&position=featured-collections');
+      const data = await res.json();
+      const banners = data.banners || [];
+      if (banners.length > 0) {
+        setFeaturedBanner(banners[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching featured banner:', error);
     }
   };
   const offerMessages = [
@@ -195,15 +210,38 @@ export default function Home() {
       <section className="py-16 bg-brand-bg">
         <div className="max-w-7xl mx-auto px-8">
           {/* Section Banner */}
-          <div className="w-full h-48 md:h-64 bg-brand-green-dark rounded-[2rem] md:rounded-[4rem] mb-16 relative overflow-hidden flex items-center px-8 md:px-16 group">
-            <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/pattern/1920/1080')] opacity-10 mix-blend-overlay" />
-            <div className="relative z-10 text-white space-y-2 md:space-y-4">
-              <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em] text-emerald-300">Featured Collections</span>
-              <h2 className="text-2xl md:text-4xl font-black italic tracking-tight">আমাদের সেরা পণ্যসমূহ</h2>
-              <p className="text-emerald-50/70 text-xs md:text-sm font-medium italic max-w-md">সেরা মানের খাঁটি পণ্য সংগ্রহ করুন এখনই এবং উপভোগ করুন প্রিমিয়াম লাইফস্টাইল।</p>
-            </div>
+          <Link href={featuredBanner?.link || '/shop'} className="block w-full h-48 md:h-64 bg-brand-green-dark rounded-[2rem] md:rounded-[4rem] mb-16 relative overflow-hidden flex items-center px-8 md:px-16 group">
+            {featuredBanner ? (
+              <>
+                <div className="absolute inset-0 opacity-20">
+                  <Image 
+                    src={featuredBanner.image}
+                    alt={featuredBanner.title}
+                    fill
+                    className="object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <div className="relative z-10 text-white space-y-2 md:space-y-4">
+                  <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em] text-emerald-300">Featured Collections</span>
+                  <h2 className="text-2xl md:text-4xl font-black italic tracking-tight">{featuredBanner.title}</h2>
+                  {featuredBanner.description && (
+                    <p className="text-emerald-50/70 text-xs md:text-sm font-medium italic max-w-md">{featuredBanner.description}</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/pattern/1920/1080')] opacity-10 mix-blend-overlay" />
+                <div className="relative z-10 text-white space-y-2 md:space-y-4">
+                  <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em] text-emerald-300">Featured Collections</span>
+                  <h2 className="text-2xl md:text-4xl font-black italic tracking-tight">আমাদের সেরা পণ্যসমূহ</h2>
+                  <p className="text-emerald-50/70 text-xs md:text-sm font-medium italic max-w-md">সেরা মানের খাঁটি পণ্য সংগ্রহ করুন এখনই এবং উপভোগ করুন প্রিমিয়াম লাইফস্টাইল।</p>
+                </div>
+              </>
+            )}
             <div className="absolute right-0 bottom-0 w-32 md:w-64 h-32 md:h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mb-16 group-hover:scale-150 transition-transform duration-1000" />
-          </div>
+          </Link>
 
           <div className="grid lg:grid-cols-12 gap-12">
             

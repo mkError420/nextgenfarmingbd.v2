@@ -8,31 +8,90 @@ import { ArrowLeft, Save } from 'lucide-react';
 export default function NewBanner() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
   const [formData, setFormData] = useState({
     title: '',
     title_en: '',
     description: '',
     description_en: '',
     image: '',
-    mobileImage: '',
     link: '',
-    position: 'home' as 'home' | 'category' | 'product' | 'all',
+    position: 'home' as 'home' | 'category' | 'product' | 'all' | 'hero-carousel' | 'hero-right-top' | 'hero-right-bottom' | 'featured-collections',
     order: '',
     startDate: '',
     endDate: '',
     isActive: true,
   });
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
+        alert('Only JPG, JPEG, PNG, and WebP images are allowed');
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+      setImageFile(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!res.ok) {
+      throw new Error('Failed to upload image');
+    }
+    
+    const data = await res.json();
+    return data.url || (data.urls && data.urls[0]) || '';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      let imageUrl = formData.image;
+      
+      // Upload image if file is selected
+      if (imageFile) {
+        setUploading(true);
+        try {
+          imageUrl = await uploadImage(imageFile);
+          setFormData({ ...formData, image: imageUrl });
+        } catch (error) {
+          console.error('Error uploading image:', error);
+          alert('Failed to upload image');
+          setUploading(false);
+          setLoading(false);
+          return;
+        }
+        setUploading(false);
+      }
+
       const res = await fetch('/api/banners', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          image: imageUrl,
           order: formData.order ? parseInt(formData.order) : undefined,
           startDate: formData.startDate ? new Date(formData.startDate) : undefined,
           endDate: formData.endDate ? new Date(formData.endDate) : undefined,
@@ -107,7 +166,11 @@ export default function NewBanner() {
                 onChange={(e) => setFormData({ ...formData, position: e.target.value as any })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
-                <option value="home">Home</option>
+                <option value="home">Home (General)</option>
+                <option value="hero-carousel">Hero - Left Carousel</option>
+                <option value="hero-right-top">Hero - Right Top</option>
+                <option value="hero-right-bottom">Hero - Right Bottom</option>
+                <option value="featured-collections">Featured Collections</option>
                 <option value="category">Category</option>
                 <option value="product">Product</option>
                 <option value="all">All Pages</option>
@@ -153,29 +216,23 @@ export default function NewBanner() {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Image URL (Desktop) *
+                Banner Image *
               </label>
               <input
-                type="url"
-                required
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="https://example.com/banner-image.jpg"
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                onChange={handleImageChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
               />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Image URL (Mobile)
-              </label>
-              <input
-                type="url"
-                value={formData.mobileImage}
-                onChange={(e) => setFormData({ ...formData, mobileImage: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="https://example.com/banner-mobile-image.jpg"
-              />
+              {imagePreview && (
+                <div className="mt-2">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-48 h-32 object-cover rounded-lg border border-gray-200"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="md:col-span-2">
@@ -238,11 +295,11 @@ export default function NewBanner() {
             </Link>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || uploading}
               className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
             >
               <Save className="w-5 h-5 mr-2" />
-              {loading ? 'Saving...' : 'Save Banner'}
+              {uploading ? 'Uploading Image...' : loading ? 'Saving...' : 'Save Banner'}
             </button>
           </div>
         </form>

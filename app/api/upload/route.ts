@@ -39,35 +39,50 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Ensure uploads directory exists
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
+    // Check if running on Netlify (use Netlify Blobs) or local (use file system)
+    const isNetlify = process.env.NETLIFY === 'true' || process.env.NETLIFY_BLOBS_CONTEXT === 'true';
+
+    if (isNetlify) {
+      // Use Netlify Blobs for production
+      const { getStore } = await import('@netlify/blobs');
+      const store = getStore({ name: 'product-images' });
+
+      const uploadedUrls: string[] = [];
+      for (const file of files) {
+        const bytes = await file.arrayBuffer();
+        const timestamp = Date.now();
+        const randomString = Math.random().toString(36).substring(2, 15);
+        const extension = file.name.split('.').pop() || 'jpg';
+        const filename = `${timestamp}-${randomString}.${extension}`;
+
+        await store.set(filename, bytes);
+        uploadedUrls.push(`/api/blobs/${filename}`);
+      }
+
+      return NextResponse.json({ urls: uploadedUrls }, { status: 200 });
+    } else {
+      // Use local file system for development
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+      if (!existsSync(uploadsDir)) {
+        await mkdir(uploadsDir, { recursive: true });
+      }
+
+      const uploadedUrls: string[] = [];
+      for (const file of files) {
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        const timestamp = Date.now();
+        const randomString = Math.random().toString(36).substring(2, 15);
+        const extension = path.extname(file.name);
+        const filename = `${timestamp}-${randomString}${extension}`;
+        const filepath = path.join(uploadsDir, filename);
+
+        await writeFile(filepath, buffer);
+        uploadedUrls.push(`/uploads/${filename}`);
+      }
+
+      return NextResponse.json({ urls: uploadedUrls }, { status: 200 });
     }
-
-    // Upload all files to local storage
-    const uploadedUrls: string[] = [];
-    for (const file of files) {
-      // Convert file to buffer
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      // Generate unique filename
-      const timestamp = Date.now();
-      const randomString = Math.random().toString(36).substring(2, 15);
-      const extension = path.extname(file.name);
-      const filename = `${timestamp}-${randomString}${extension}`;
-      const filepath = path.join(uploadsDir, filename);
-
-      // Write file to local storage
-      await writeFile(filepath, buffer);
-
-      // Return the URL path
-      uploadedUrls.push(`/uploads/${filename}`);
-    }
-
-    // Return the URLs of the uploaded files
-    return NextResponse.json({ urls: uploadedUrls }, { status: 200 });
   } catch (error) {
     console.error('Error uploading files:', error);
     return NextResponse.json({ error: 'Failed to upload files' }, { status: 500 });

@@ -197,10 +197,13 @@ export default function Header() {
             <span className="hidden lg:block text-[10px] mt-1 font-bold">ব্যাগ</span>
           </button>
           
-          <Link href="/login" className="hidden sm:inline-block bg-brand-green-dark text-white px-4 md:px-6 py-2 rounded-full text-xs md:text-sm font-semibold hover:bg-brand-green-deep transition-colors shadow-sm whitespace-nowrap">
+          <Link href="/customer-login?mode=register" className="hidden sm:inline-block bg-emerald-50 text-emerald-700 px-4 md:px-5 py-2 rounded-full text-xs md:text-sm font-semibold hover:bg-emerald-100 transition-colors shadow-sm whitespace-nowrap border border-emerald-200">
+            নিবন্ধন
+          </Link>
+          <Link href="/customer-login" className="hidden sm:inline-block bg-brand-green-dark text-white px-4 md:px-6 py-2 rounded-full text-xs md:text-sm font-semibold hover:bg-brand-green-deep transition-colors shadow-sm whitespace-nowrap">
             লগইন
           </Link>
-          <Link href="/login" className="sm:hidden text-emerald-800">
+          <Link href="/customer-login" className="sm:hidden text-emerald-800">
             <User size={20} />
           </Link>
         </div>
@@ -311,8 +314,15 @@ export default function Header() {
                 <div className="border-t border-gray-100 p-4">
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">অন্যান্য</h3>
                   <div className="space-y-1">
-                    <Link href="/offers" className="block p-3 font-medium hover:bg-gray-100 rounded-lg">অফার সমূহ</Link>
-                    <Link href="/track-order" className="block p-3 font-medium hover:bg-gray-100 rounded-lg">অর্ডার ট্র্যাক</Link>
+                    <Link href="/offers" onClick={() => setIsMenuOpen(false)} className="block p-3 font-medium hover:bg-gray-100 rounded-lg">অফার সমূহ</Link>
+                    <Link href="/track-order" onClick={() => setIsMenuOpen(false)} className="block p-3 font-medium hover:bg-gray-100 rounded-lg">অর্ডার ট্র্যাক</Link>
+                  </div>
+                </div>
+                <div className="border-t border-gray-100 p-4">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">অ্যাকাউন্ট</h3>
+                  <div className="space-y-1">
+                    <Link href="/customer-login" onClick={() => setIsMenuOpen(false)} className="block p-3 font-medium hover:bg-gray-100 rounded-lg">লগইন</Link>
+                    <Link href="/customer-login?mode=register" onClick={() => setIsMenuOpen(false)} className="block p-3 font-medium hover:bg-gray-100 rounded-lg text-emerald-700">নিবন্ধন</Link>
                   </div>
                 </div>
               </div>

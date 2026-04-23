@@ -1,20 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Phone, User, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 
 export default function CustomerLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
-  const [isNewUser, setIsNewUser] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(searchParams.get('mode') === 'register');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Clear any existing customer data on login page load
+    localStorage.removeItem('customer');
+    localStorage.removeItem('user');
+  }, []);
 
   const handleCheckPhone = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,16 +42,19 @@ export default function CustomerLoginPage() {
       });
 
       const data = await response.json();
+      console.log('[checkPhone] API response:', { status: response.status, ok: response.ok, data });
 
       if (response.ok) {
-        // Store user in localStorage
+        // Store user in localStorage for both customer and auth contexts
         localStorage.setItem('customer', JSON.stringify(data));
+        localStorage.setItem('user', JSON.stringify(data));
         toast.success('লগইন সফলভাবে সম্পন্ন হয়েছে!');
         router.push('/customer-dashboard');
       } else if (response.status === 400 && data.error === 'Name is required for new users') {
         setIsNewUser(true);
         toast('নতুন ব্যবহারকারী চিহ্নিত হয়েছে। আপনার নাম প্রদান করুন।');
       } else {
+        console.error('[checkPhone] API error:', data);
         toast.error(data.error || 'লগইন ব্যর্থ হয়েছে');
       }
     } catch (error) {
@@ -73,13 +83,26 @@ export default function CustomerLoginPage() {
         body: JSON.stringify({ phone, name }),
       });
 
-      const data = await response.json();
+      const rawText = await response.text();
+      console.log('[register] Raw response text:', rawText);
+
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch (e) {
+        console.error('[register] Failed to parse JSON:', e);
+        data = { rawText };
+      }
+
+      console.log('[register] Parsed API response:', { status: response.status, ok: response.ok, data });
 
       if (response.ok) {
         localStorage.setItem('customer', JSON.stringify(data));
+        localStorage.setItem('user', JSON.stringify(data));
         toast.success('অ্যাকাউন্ট তৈরি সফলভাবে সম্পন্ন হয়েছে!');
         router.push('/customer-dashboard');
       } else {
+        console.error('[register] API error:', data);
         toast.error(data.error || 'নিবন্ধন ব্যর্থ হয়েছে');
       }
     } catch (error) {
@@ -110,6 +133,32 @@ export default function CustomerLoginPage() {
               <p className="text-gray-500 font-medium italic">
                 {isNewUser ? 'আপনার তথ্য প্রদান করে অ্যাকাউন্ট তৈরি করুন' : 'আপনার ফোন নম্বর দিয়ে লগইন করুন'}
               </p>
+            </div>
+
+            {/* Login / Register Tabs */}
+            <div className="flex bg-gray-100 rounded-2xl p-1 mb-6">
+              <button
+                type="button"
+                onClick={() => { setIsNewUser(false); setName(''); }}
+                className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
+                  !isNewUser
+                    ? 'bg-white text-emerald-700 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                লগইন
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsNewUser(true)}
+                className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
+                  isNewUser
+                    ? 'bg-white text-emerald-700 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                নতুন অ্যাকাউন্ট
+              </button>
             </div>
 
             {!isNewUser ? (
@@ -166,7 +215,6 @@ export default function CustomerLoginPage() {
                       placeholder="01712345678"
                       className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-200 focus:border-emerald-500 focus:outline-none transition-colors text-lg"
                       required
-                      disabled
                     />
                   </div>
                 </div>
@@ -178,17 +226,6 @@ export default function CustomerLoginPage() {
                 >
                   {loading ? 'প্রসেসিং হচ্ছে...' : 'অ্যাকাউন্ট তৈরি করুন'}
                   {!loading && <CheckCircle2 className="w-5 h-5" />}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsNewUser(false);
-                    setName('');
-                  }}
-                  className="w-full text-gray-500 py-3 rounded-2xl font-medium hover:text-gray-700 transition-colors"
-                >
-                  ফিরে যান
                 </button>
               </form>
             )}

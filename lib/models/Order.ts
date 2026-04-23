@@ -137,7 +137,4 @@ OrderSchema.index({ userId: 1, createdAt: -1 });
 OrderSchema.index({ status: 1 });
 OrderSchema.index({ orderNumber: 1 });
 
-// Force model reload to apply schema changes
-delete mongoose.models.Order;
-delete (mongoose.connection.models as any)['Order'];
-export default mongoose.model<IOrder>('Order', OrderSchema);
+export default mongoose.models.Order || mongoose.model<IOrder>('Order', OrderSchema);

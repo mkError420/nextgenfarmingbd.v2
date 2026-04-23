@@ -85,11 +85,8 @@ const UserSchema: Schema = new Schema({
 
 // Create indexes
 UserSchema.index({ email: 1 });
-UserSchema.index({ phone: 1 });
+UserSchema.index({ phone: 1 }, { unique: true });
 UserSchema.index({ role: 1 });
 UserSchema.index({ isActive: 1 });
 
-// Force model reload to apply schema changes
-delete mongoose.models.User;
-delete (mongoose.connection.models as any)['User'];
-export default mongoose.model<IUser>('User', UserSchema);
+export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

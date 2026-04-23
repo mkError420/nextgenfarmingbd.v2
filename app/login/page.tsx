@@ -1,15 +1,18 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Redirect to customer login page
-    router.replace('/customer-login');
-  }, [router]);
+    // Redirect to customer login page, preserving query params
+    const params = searchParams.toString();
+    const redirectUrl = params ? `/customer-login?${params}` : '/customer-login';
+    router.replace(redirectUrl);
+  }, [router, searchParams]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-emerald-50">

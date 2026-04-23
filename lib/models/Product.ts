@@ -110,7 +110,4 @@ ProductSchema.index({ category: 1, createdAt: -1 });
 ProductSchema.index({ name: 'text', name_en: 'text' });
 ProductSchema.index({ price: 1 });
 
-// Force model reload to apply schema changes
-delete mongoose.models.Product;
-delete (mongoose.connection.models as any)['Product'];
-export default mongoose.model<IProduct>('Product', ProductSchema);
+export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);

@@ -4,6 +4,16 @@ import User from '@/lib/models/User';
 
 const MONGODB_URI = "mongodb://mkrabbanicse_db_user:nobinislam420%40%23%24@ac-ru22zib-shard-00-00.g2korqj.mongodb.net:27017,ac-ru22zib-shard-00-01.g2korqj.mongodb.net:27017,ac-ru22zib-shard-00-02.g2korqj.mongodb.net:27017/nextgenfarming?ssl=true&replicaSet=atlas-jstves-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0";
 
+function normalizePhone(phone: string): string {
+  let normalized = phone.replace(/[\s\-\(\)]/g, '');
+  if (normalized.startsWith('+880')) {
+    normalized = '0' + normalized.substring(4);
+  } else if (normalized.startsWith('880') && normalized.length === 13) {
+    normalized = '0' + normalized.substring(3);
+  }
+  return normalized;
+}
+
 export async function GET(request: NextRequest) {
   try {
     await mongoose.connect(MONGODB_URI);
@@ -62,8 +72,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name and phone are required' }, { status: 400 });
     }
 
+    // Normalize phone number
+    const normalizedPhone = normalizePhone(customerData.phone);
+
     // Check if phone already exists
-    const existingUser = await User.findOne({ phone: customerData.phone });
+    const existingUser = await User.findOne({ phone: normalizedPhone });
     if (existingUser) {
       return NextResponse.json({ error: 'Phone number already exists' }, { status: 400 });
     }
@@ -71,7 +84,7 @@ export async function POST(request: NextRequest) {
     // Create new customer
     const customer = new User({
       name: customerData.name,
-      phone: customerData.phone,
+      phone: normalizedPhone,
       email: customerData.email || '',
       role: 'user',
       isActive: true,
@@ -100,8 +113,9 @@ export async function PUT(request: NextRequest) {
     
     const updateData = await request.json();
     
-    // If phone is being updated, check if it already exists
+    // If phone is being updated, normalize and check if it already exists
     if (updateData.phone) {
+      updateData.phone = normalizePhone(updateData.phone);
       const existingUser = await User.findOne({ phone: updateData.phone, _id: { $ne: id } });
       if (existingUser) {
         return NextResponse.json({ error: 'Phone number already exists' }, { status: 400 });

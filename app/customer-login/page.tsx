@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Phone, User, ArrowRight, CheckCircle2 } from 'lucide-react';
@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 
-export default function CustomerLoginPage() {
+function CustomerLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [phone, setPhone] = useState('');
@@ -240,5 +240,20 @@ export default function CustomerLoginPage() {
       </section>
       <Footer />
     </main>
+  );
+}
+
+export default function CustomerLoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-emerald-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <CustomerLoginForm />
+    </Suspense>
   );
 }

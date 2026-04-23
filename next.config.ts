@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
   compress: true,
   swcMinify: true,
   poweredByHeader: false,
+  env: {
+    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+  },
   // Allow access to remote image placeholder.
   images: {
     remotePatterns: [
@@ -47,6 +52,12 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'magpiely.com.bd',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
         port: '',
         pathname: '/**',
       },

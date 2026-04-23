@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -38,6 +38,7 @@ export default function NewProduct() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [galleryImageFiles, setGalleryImageFiles] = useState<File[]>([]);
   const [galleryImagePreviews, setGalleryImagePreviews] = useState<string[]>([]);
+  const galleryFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchCategories();
@@ -67,17 +68,23 @@ export default function NewProduct() {
         const formData = new FormData();
         formData.append('file', file);
 
+        console.log('Uploading file:', file.name, 'Type:', file.type, 'Size:', file.size);
+
         const res = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         });
 
+        console.log('Upload response status:', res.status);
+
         if (!res.ok) {
           const error = await res.json();
+          console.error('Upload error:', error);
           throw new Error(error.error || 'Failed to upload image');
         }
 
         const data = await res.json();
+        console.log('Upload response data:', data);
         if (data.urls && data.urls.length > 0) {
           uploadedUrls.push(...data.urls);
         }
@@ -87,12 +94,18 @@ export default function NewProduct() {
         setFormData((prev) => ({ ...prev, images: uploadedUrls }));
         setImagePreviews(uploadedUrls);
       } else {
-        setFormData((prev) => ({ ...prev, galleryImages: uploadedUrls }));
-        setGalleryImagePreviews(uploadedUrls);
+        // For gallery, append new URLs to existing ones
+        setFormData((prev) => ({ ...prev, galleryImages: [...prev.galleryImages, ...uploadedUrls] }));
+        setGalleryImagePreviews(prev => [...prev, ...uploadedUrls]);
+      }
+
+      // Reset file input after successful upload
+      if (type === 'gallery' && galleryFileInputRef.current) {
+        galleryFileInputRef.current.value = '';
       }
     } catch (error) {
       console.error('Error uploading images:', error);
-      alert('Failed to upload images. Please try again.');
+      alert(`Failed to upload images: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setUploading(false);
     }
@@ -127,25 +140,29 @@ export default function NewProduct() {
     if (type === 'main') {
       setImageFiles(files);
     } else {
-      setGalleryImageFiles(files);
+      // For gallery, append new files to existing ones
+      const currentCount = galleryImagePreviews.length;
+      if (currentCount + files.length > maxFiles) {
+        alert(`You can only have up to ${maxFiles} gallery images. Currently have ${currentCount}.`);
+        return;
+      }
+      setGalleryImageFiles(prev => [...prev, ...files]);
     }
 
-    // Create previews
-    const previews: string[] = [];
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        previews.push(reader.result as string);
-        if (previews.length === files.length) {
-          if (type === 'main') {
+    // Create previews only for main images (gallery previews are added after upload)
+    if (type === 'main') {
+      const previews: string[] = [];
+      files.forEach((file) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          previews.push(reader.result as string);
+          if (previews.length === files.length) {
             setImagePreviews(previews);
-          } else {
-            setGalleryImagePreviews(previews);
           }
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+        };
+        reader.readAsDataURL(file);
+      });
+    }
 
     // Auto-upload the images
     handleImageUpload(files, type);
@@ -543,23 +560,41 @@ export default function NewProduct() {
                 <input
                   type="file"
                   accept="image/jpeg,image/jpg,image/png,image/webp"
-                  multiple
-                  max={2}
+                  disabled={galleryImagePreviews.length >= 2 || uploading}
+                  ref={galleryFileInputRef}
                   onChange={(e) => handleFileChange(e, 'gallery')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
+                {uploading && (
+                  <p className="text-sm text-gray-500">Uploading images...</p>
+                )}
                 {galleryImagePreviews.length > 0 && (
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-2 flex gap-2 flex-wrap">
                     {galleryImagePreviews.map((preview, index) => (
-                      <img
-                        key={index}
-                        src={preview}
-                        alt={`Gallery Preview ${index + 1}`}
-                        className="w-32 h-32 object-cover rounded-lg border border-gray-200"
-                      />
+                      <div key={index} className="relative">
+                        <img
+                          src={preview}
+                          alt={`Gallery Preview ${index + 1}`}
+                          className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGalleryImagePreviews(prev => prev.filter((_, i) => i !== index));
+                            setFormData(prev => ({
+                              ...prev,
+                              galleryImages: prev.galleryImages.filter((_, i) => i !== index)
+                            }));
+                          }}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 text-xs"
+                        >
+                          ×
+                        </button>
+                      </div>
                     ))}
                   </div>
                 )}
+                <p className="text-xs text-gray-500">Upload images one by one (max 2)</p>
               </div>
             </div>
           </div>

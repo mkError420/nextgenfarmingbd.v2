@@ -1,10 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
+});
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if Cloudinary is configured
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      console.error('Cloudinary environment variables missing:', {
+        cloud_name: !!process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: !!process.env.CLOUDINARY_API_KEY,
+        api_secret: !!process.env.CLOUDINARY_API_SECRET,
+      });
+      return NextResponse.json(
+        { error: 'Cloudinary configuration missing. Please check environment variables.' },
+        { status: 500 }
+      );
+    }
+
     const formData = await request.formData();
     // Handle both 'files' (array) and 'file' (single) form field names
     let files = formData.getAll('files') as File[];
@@ -39,29 +58,38 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-
-    // Upload all files
+    // Upload all files to Cloudinary
     const uploadedUrls: string[] = [];
     for (const file of files) {
-      // Generate unique filename
-      const timestamp = Date.now();
-      const randomString = Math.random().toString(36).substring(2, 15);
-      const fileExtension = path.extname(file.name);
-      const filename = `${timestamp}-${randomString}${fileExtension}`;
-      const filepath = path.join(uploadsDir, filename);
-
-      // Convert file to buffer and write to disk
+      // Convert file to buffer
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      await writeFile(filepath, buffer);
 
-      // Add URL to array
-      uploadedUrls.push(`/uploads/${filename}`);
+      // Upload to Cloudinary
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          {
+            resource_type: 'image',
+            folder: 'nextgenfarming',
+            transformation: [
+              { quality: 'auto', fetch_format: 'auto' },
+              { width: 1200, crop: 'limit' },
+            ],
+          },
+          (error, result) => {
+            if (error) {
+              console.error('Cloudinary upload error:', error);
+              reject(error);
+            } else {
+              resolve(result);
+            }
+          }
+        ).end(buffer);
+      });
+
+      if (result && typeof result === 'object' && 'secure_url' in result) {
+        uploadedUrls.push(result.secure_url as string);
+      }
     }
 
     // Return the URLs of the uploaded files

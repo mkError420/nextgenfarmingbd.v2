@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, User, Phone, Mail, Calendar, MapPin, ShoppingBag, Eye, Plus, Trash2, X, Edit } from 'lucide-react';
+import { Search, User, Phone, Mail, Calendar, MapPin, ShoppingBag, Eye, Plus, Trash2, X, Edit, Download } from 'lucide-react';
 
 export default function AdminCustomers() {
   const [customers, setCustomers] = useState([]);
@@ -140,6 +140,37 @@ export default function AdminCustomers() {
     }
   };
 
+  const exportToCSV = () => {
+    if (customers.length === 0) {
+      alert('No customers to export');
+      return;
+    }
+
+    const headers = ['Name', 'Phone', 'Email', 'Joined Date', 'Status'];
+    const rows = customers.map((customer: any) => [
+      customer.name,
+      customer.phone,
+      customer.email || '',
+      new Date(customer.createdAt).toLocaleDateString(),
+      customer.isActive ? 'Active' : 'Inactive'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `customers_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading) {
     return <div className="text-center py-8">Loading...</div>;
   }
@@ -148,13 +179,22 @@ export default function AdminCustomers() {
     <div>
       <div className="mb-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-        <button
-          onClick={handleCreateCustomer}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Add Customer
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={exportToCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <Download className="w-5 h-5" />
+            Export
+          </button>
+          <button
+            onClick={handleCreateCustomer}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            Add Customer
+          </button>
+        </div>
       </div>
 
       {/* Search */}

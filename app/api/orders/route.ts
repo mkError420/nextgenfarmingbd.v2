@@ -95,9 +95,10 @@ export async function POST(request: NextRequest) {
 
     const order = new Order(orderData);
     await order.save();
-    
+
     console.log('Order created successfully:', order._id);
-    return NextResponse.json(order, { status: 201 });
+    console.log('Delivery charge saved:', order.deliveryCharge);
+    return NextResponse.json(order.toObject(), { status: 201 });
   } catch (error: any) {
     console.error('Error creating order:', error);
     console.error('Error details:', {

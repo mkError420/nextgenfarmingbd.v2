@@ -15,6 +15,7 @@ export default function CustomerDashboard() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<any>(null);
+  const [settings, setSettings] = useState<any>(null);
 
   useEffect(() => {
     // Check if customer is logged in
@@ -27,7 +28,18 @@ export default function CustomerDashboard() {
     const parsedCustomer = JSON.parse(storedCustomer);
     setCustomer(parsedCustomer);
     fetchOrders(parsedCustomer.phone);
+    fetchSettings();
   }, [router]);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch('/api/settings');
+      const data = await response.json();
+      setSettings(data.settings);
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    }
+  };
 
   const fetchOrders = async (phone: string) => {
     try {
@@ -330,6 +342,21 @@ export default function CustomerDashboard() {
                 </div>
 
                 <div id="print-invoice" className="p-6">
+                  {/* Company Header */}
+                  <div className="border-b pb-6 mb-6 text-center">
+                    {settings?.logo && (
+                      <img src={settings.logo} alt={settings.siteName} className="max-w-32 max-h-20 mx-auto mb-3" />
+                    )}
+                    <h2 className="text-xl font-bold text-gray-900">{settings?.siteName || 'NextGen FarmingBD'}</h2>
+                    {settings?.contactAddress && (
+                      <p className="text-sm text-gray-600 mt-1">{settings.contactAddress}</p>
+                    )}
+                    <div className="text-sm text-gray-600 mt-1">
+                      {settings?.contactPhone && <span className="mx-2">Phone: {settings.contactPhone}</span>}
+                      {settings?.contactEmail && <span className="mx-2">Email: {settings.contactEmail}</span>}
+                    </div>
+                  </div>
+
                   {/* Invoice Header */}
                   <div className="border-b pb-6 mb-6">
                     <h1 className="text-2xl font-bold text-gray-900 mb-4">INVOICE</h1>

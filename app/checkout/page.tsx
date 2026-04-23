@@ -192,10 +192,29 @@ export default function CheckoutPage() {
               background: #fff;
               min-height: 100vh;
             }
-            .header {
+            .company-header {
               text-align: center;
               border-bottom: 3px solid #10b981;
               padding-bottom: 15px;
+              margin-bottom: 20px;
+            }
+            .company-logo {
+              max-width: 150px;
+              max-height: 80px;
+              margin-bottom: 10px;
+            }
+            .company-name {
+              font-size: 24px;
+              font-weight: bold;
+              color: #10b981;
+              margin: 10px 0;
+            }
+            .company-info {
+              color: #666;
+              font-size: 14px;
+              margin: 5px 0;
+            }
+            .header {
               margin-bottom: 20px;
             }
             .header h1 {
@@ -293,11 +312,18 @@ export default function CheckoutPage() {
           </style>
         </head>
         <body>
+          <div class="company-header">
+            ${settings?.logo ? `<img src="${settings.logo}" alt="${settings.siteName}" class="company-logo" />` : ''}
+            <div class="company-name">${settings?.siteName || 'NextGen FarmingBD'}</div>
+            ${settings?.contactAddress ? `<div class="company-info">${settings.contactAddress}</div>` : ''}
+            ${settings?.contactPhone ? `<div class="company-info">Phone: ${settings.contactPhone}</div>` : ''}
+            ${settings?.contactEmail ? `<div class="company-info">Email: ${settings.contactEmail}</div>` : ''}
+          </div>
+
           <div class="header">
             <h1>🛒 Order Receipt</h1>
-            <p>NextGen Farming BD</p>
           </div>
-          
+
           <div class="order-info">
             <h2>Order Information</h2>
             <div class="info-row">
@@ -360,6 +386,14 @@ export default function CheckoutPage() {
               </tbody>
             </table>
             <div class="total-section">
+              <div class="info-row">
+                <span class="label">Subtotal:</span>
+                <span class="value">৳${createdOrder.items?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0)}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">ডেলিভারি চার্জ:</span>
+                <span class="value">৳${createdOrder.deliveryCharge !== undefined ? createdOrder.deliveryCharge : (createdOrder.totalAmount - createdOrder.items?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) - (createdOrder.discountAmount || 0))}</span>
+              </div>
               <div class="total">Total: ৳${createdOrder.totalAmount}</div>
             </div>
           </div>

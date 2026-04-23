@@ -17,10 +17,22 @@ export default function AdminOrders() {
   const itemsPerPage = 8;
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [batchDeleting, setBatchDeleting] = useState(false);
+  const [settings, setSettings] = useState<any>(null);
 
   useEffect(() => {
     fetchOrders();
+    fetchSettings();
   }, [currentPage, statusFilter]);
+
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch('/api/settings');
+      const data = await res.json();
+      setSettings(data.settings);
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    }
+  };
 
   const fetchOrders = async () => {
     try {
@@ -206,9 +218,34 @@ export default function AdminOrders() {
               max-width: 800px;
               margin: 0 auto;
             }
-            .header {
+            .company-header {
+              text-align: center;
+              margin-bottom: 20px;
+              padding-bottom: 20px;
               border-bottom: 2px solid #333;
-              padding-bottom: 10px;
+            }
+            .company-logo {
+              max-width: 150px;
+              max-height: 80px;
+              margin-bottom: 10px;
+            }
+            .company-name {
+              font-size: 24px;
+              font-weight: bold;
+              color: #333;
+              margin: 10px 0;
+            }
+            .company-address {
+              color: #666;
+              font-size: 14px;
+              margin: 5px 0;
+            }
+            .company-contact {
+              color: #666;
+              font-size: 12px;
+              margin: 5px 0;
+            }
+            .header {
               margin-bottom: 20px;
             }
             .header h1 {
@@ -269,6 +306,14 @@ export default function AdminOrders() {
           </style>
         </head>
         <body>
+          <div class="company-header">
+            ${settings?.logo ? `<img src="${settings.logo}" alt="${settings.siteName}" class="company-logo" />` : ''}
+            <div class="company-name">${settings?.siteName || 'NextGen FarmingBD'}</div>
+            ${settings?.contactAddress ? `<div class="company-address">${settings.contactAddress}</div>` : ''}
+            ${settings?.contactPhone ? `<div class="company-contact">Phone: ${settings.contactPhone}</div>` : ''}
+            ${settings?.contactEmail ? `<div class="company-contact">Email: ${settings.contactEmail}</div>` : ''}
+          </div>
+
           <div class="header">
             <h1>Order Details</h1>
             <p>Order Number: ${selectedOrder.orderNumber || selectedOrder._id}</p>
@@ -337,10 +382,10 @@ export default function AdminOrders() {
 
   const handleExportCSV = () => {
     const ordersToExport = filteredOrders;
-    
-    // CSV headers
+
+    // CSV headers with company info
     const headers = ['Order Number', 'Customer Name', 'Phone', 'Total Amount', 'Status', 'Payment Method', 'Payment Status', 'Date'];
-    
+
     // CSV rows
     const rows = ordersToExport.map((order: any) => [
       order.orderNumber || order._id,
@@ -352,15 +397,21 @@ export default function AdminOrders() {
       order.paymentStatus,
       new Date(order.createdAt).toLocaleDateString()
     ]);
-    
-    // Create CSV content
-    const csvContent = [
+
+    // Create CSV content with company info at the top
+    const companyInfo = [
+      `Company: ${settings?.siteName || 'NextGen FarmingBD'}`,
+      settings?.contactAddress ? `Address: ${settings.contactAddress}` : '',
+      settings?.contactPhone ? `Phone: ${settings.contactPhone}` : '',
+      settings?.contactEmail ? `Email: ${settings.contactEmail}` : '',
+      '',
+      'Order Data:',
       headers.join(','),
       ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-    
+    ].filter(line => line !== '').join('\n');
+
     // Create download link
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([companyInfo], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -373,7 +424,7 @@ export default function AdminOrders() {
 
   const handleExportPDF = () => {
     const ordersToExport = filteredOrders;
-    
+
     const pdfContent = `
       <html>
         <head>
@@ -385,10 +436,29 @@ export default function AdminOrders() {
               max-width: 1200px;
               margin: 0 auto;
             }
-            .header {
+            .company-header {
               text-align: center;
               border-bottom: 2px solid #333;
               padding-bottom: 20px;
+              margin-bottom: 20px;
+            }
+            .company-logo {
+              max-width: 150px;
+              max-height: 80px;
+              margin-bottom: 10px;
+            }
+            .company-name {
+              font-size: 24px;
+              font-weight: bold;
+              color: #333;
+              margin: 10px 0;
+            }
+            .company-info {
+              color: #666;
+              font-size: 14px;
+              margin: 5px 0;
+            }
+            .header {
               margin-bottom: 20px;
             }
             .header h1 {
@@ -432,6 +502,13 @@ export default function AdminOrders() {
           </style>
         </head>
         <body>
+          <div class="company-header">
+            ${settings?.logo ? `<img src="${settings.logo}" alt="${settings.siteName}" class="company-logo" />` : ''}
+            <div class="company-name">${settings?.siteName || 'NextGen FarmingBD'}</div>
+            ${settings?.contactAddress ? `<div class="company-info">${settings.contactAddress}</div>` : ''}
+            ${settings?.contactPhone ? `<div class="company-info">Phone: ${settings.contactPhone}</div>` : ''}
+            ${settings?.contactEmail ? `<div class="company-info">Email: ${settings.contactEmail}</div>` : ''}
+          </div>
           <div class="header">
             <h1>Orders Report</h1>
             <p>Generated on: ${new Date().toLocaleString()}</p>

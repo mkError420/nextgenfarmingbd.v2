@@ -17,6 +17,9 @@ export interface IOrder extends Document {
   customerEmail?: string;
   items: IOrderItem[];
   totalAmount: number;
+  deliveryCharge: number;
+  deliveryArea?: string;
+  deliveryAreaName?: string;
   status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   shippingAddress: {
     street: string;
@@ -86,6 +89,17 @@ const OrderSchema: Schema = new Schema({
     type: Number,
     required: true,
     min: 0,
+  },
+  deliveryCharge: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  deliveryArea: {
+    type: String,
+  },
+  deliveryAreaName: {
+    type: String,
   },
   status: {
     type: String,

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { Package, ShoppingBag, LogOut, User, Phone, MapPin, Calendar, Clock, CheckCircle, XCircle, Truck } from 'lucide-react';
+import { Package, ShoppingBag, LogOut, User, Phone, MapPin, Calendar, Clock, CheckCircle, XCircle, Truck, Printer } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -14,6 +14,7 @@ export default function CustomerDashboard() {
   const [customer, setCustomer] = useState<any>(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<any>(null);
 
   useEffect(() => {
     // Check if customer is logged in
@@ -46,6 +47,25 @@ export default function CustomerDashboard() {
     localStorage.removeItem('customer');
     toast.success('লগআউট সফলভাবে সম্পন্ন হয়েছে');
     router.push('/');
+  };
+
+  const handlePrintInvoice = (order: any) => {
+    setSelectedOrderForPrint(order);
+  };
+
+  const handlePrint = () => {
+    const printContent = document.getElementById('print-invoice');
+    if (printContent) {
+      const originalContents = document.body.innerHTML;
+      const printContents = printContent.innerHTML;
+
+      document.body.innerHTML = printContents;
+      window.print();
+      document.body.innerHTML = originalContents;
+
+      // Reload the page to restore React state
+      window.location.reload();
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -242,9 +262,18 @@ export default function CustomerDashboard() {
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-black text-emerald-600">৳{order.totalAmount}</p>
-                        <p className="text-sm text-gray-500">{order.items?.length} আইটেম</p>
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => handlePrintInvoice(order)}
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+                        >
+                          <Printer className="w-4 h-4" />
+                          Print Invoice
+                        </button>
+                        <div className="text-right">
+                          <p className="text-2xl font-black text-emerald-600">৳{order.totalAmount}</p>
+                          <p className="text-sm text-gray-500">{order.items?.length} আইটেম</p>
+                        </div>
                       </div>
                     </div>
 
@@ -285,6 +314,147 @@ export default function CustomerDashboard() {
               </div>
             )}
           </motion.div>
+
+          {/* Print Invoice Modal */}
+          {selectedOrderForPrint && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+                  <h2 className="text-xl font-bold text-gray-900">Order Invoice</h2>
+                  <button
+                    onClick={() => setSelectedOrderForPrint(null)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div id="print-invoice" className="p-6">
+                  {/* Invoice Header */}
+                  <div className="border-b pb-6 mb-6">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-4">INVOICE</h1>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500">Order Number</p>
+                        <p className="font-semibold">{selectedOrderForPrint.orderNumber || selectedOrderForPrint._id}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Date</p>
+                        <p className="font-semibold">{new Date(selectedOrderForPrint.createdAt).toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Customer Name</p>
+                        <p className="font-semibold">{customer?.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Phone</p>
+                        <p className="font-semibold">{customer?.phone}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Shipping Address */}
+                  <div className="mb-6">
+                    <h3 className="text-sm font-semibold text-gray-500 mb-2">Shipping Address</h3>
+                    <p className="text-gray-900">
+                      {selectedOrderForPrint.shippingAddress?.street},<br />
+                      {selectedOrderForPrint.shippingAddress?.city}, {selectedOrderForPrint.shippingAddress?.state}<br />
+                      {selectedOrderForPrint.shippingAddress?.zipCode}, {selectedOrderForPrint.shippingAddress?.country}
+                    </p>
+                  </div>
+
+                  {/* Order Items */}
+                  <div className="mb-6">
+                    <h3 className="text-sm font-semibold text-gray-500 mb-2">Order Items</h3>
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2 text-sm font-semibold text-gray-600">Item</th>
+                          <th className="text-center py-2 text-sm font-semibold text-gray-600">Qty</th>
+                          <th className="text-right py-2 text-sm font-semibold text-gray-600">Price</th>
+                          <th className="text-right py-2 text-sm font-semibold text-gray-600">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedOrderForPrint.items?.map((item: any, index: number) => (
+                          <tr key={index} className="border-b">
+                            <td className="py-3 text-sm">{item.name}</td>
+                            <td className="py-3 text-sm text-center">{item.quantity}</td>
+                            <td className="py-3 text-sm text-right">৳{item.price}</td>
+                            <td className="py-3 text-sm text-right">৳{item.price * item.quantity}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colSpan={3} className="py-3 text-right font-semibold">Subtotal</td>
+                          <td className="py-3 text-right font-semibold">
+                            ৳{selectedOrderForPrint.items?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0)}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td colSpan={3} className="py-3 text-right font-bold text-lg">Total</td>
+                          <td className="py-3 text-right font-bold text-lg">৳{selectedOrderForPrint.items?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+
+                  {/* Delivery Charge Section */}
+                  <div className="mb-6 bg-gray-50 rounded-xl p-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-500">ডেলিভারি চার্জ</h3>
+                        {selectedOrderForPrint.deliveryAreaName && (
+                          <p className="text-xs text-gray-400 mt-1">{selectedOrderForPrint.deliveryAreaName}</p>
+                        )}
+                      </div>
+                      <span className="text-lg font-bold text-emerald-600">
+                        ৳{(() => {
+                          const itemsTotal = selectedOrderForPrint.items?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || 0;
+                          const deliveryCharge = selectedOrderForPrint.deliveryCharge || (selectedOrderForPrint.totalAmount - itemsTotal);
+                          return deliveryCharge > 0 ? deliveryCharge : 0;
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Grand Total */}
+                  <div className="mb-6">
+                    <div className="flex justify-between items-center border-t-2 border-gray-200 pt-4">
+                      <span className="text-lg font-bold text-gray-900">সর্বমোট</span>
+                      <span className="text-2xl font-black text-emerald-600">৳{selectedOrderForPrint.totalAmount}</span>
+                    </div>
+                  </div>
+
+                  {/* Status */}
+                  <div className="mb-6">
+                    <h3 className="text-sm font-semibold text-gray-500 mb-2">Order Status</h3>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit ${getStatusColor(selectedOrderForPrint.status)}`}>
+                      {getStatusIcon(selectedOrderForPrint.status)}
+                      {selectedOrderForPrint.status}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="sticky bottom-0 bg-white border-t px-6 py-4 flex gap-3">
+                  <button
+                    onClick={handlePrint}
+                    className="flex-1 bg-emerald-600 text-white py-2 rounded-xl hover:bg-emerald-700 transition-colors"
+                  >
+                    <Printer className="w-4 h-4 inline mr-2" />
+                    Print
+                  </button>
+                  <button
+                    onClick={() => setSelectedOrderForPrint(null)}
+                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-xl hover:bg-gray-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
       <Footer />

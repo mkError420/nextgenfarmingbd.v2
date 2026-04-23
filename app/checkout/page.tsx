@@ -430,6 +430,7 @@ export default function CheckoutPage() {
           image: item.image || '' // Handle empty images
         })),
         totalAmount: total,
+        deliveryCharge: shipping,
         discountAmount: discount,
         couponCode: appliedCoupon?.code || '',
         shippingAddress: {
@@ -626,7 +627,7 @@ export default function CheckoutPage() {
                        <div className="grid md:grid-cols-2 gap-6">
                           <div className="space-y-2">
                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">শহর</label>
-                             <select 
+                             <select
                                name="city"
                                value={formData.city}
                                onChange={handleInputChange}
@@ -645,12 +646,12 @@ export default function CheckoutPage() {
                           </div>
                           <div className="space-y-2">
                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">অর্ডার নোট (ঐচ্ছিক)</label>
-                             <input 
-                               type="text" 
+                             <input
+                               type="text"
                                name="notes"
                                value={formData.notes}
                                onChange={handleInputChange}
-                               placeholder="বিশেষ কোনো অনুরোধ থাকলে" 
+                               placeholder="বিশেষ কোনো অনুরোধ থাকলে"
                                className="w-full bg-slate-50 border-2 border-slate-50 rounded-2xl px-6 py-4 text-sm focus:border-brand-green outline-none transition-all placeholder:text-slate-300 font-bold"
                              />
                           </div>

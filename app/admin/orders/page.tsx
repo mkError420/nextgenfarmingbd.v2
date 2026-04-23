@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Eye, Search, Filter, Trash2, X, MapPin, Phone, Mail, Package, CreditCard, Printer, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { Eye, Search, Filter, Trash2, X, MapPin, Phone, Mail, Package, CreditCard, Printer, Download, FileSpreadsheet, FileText, Check } from 'lucide-react';
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
@@ -12,16 +12,29 @@ export default function AdminOrders() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const itemsPerPage = 8;
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [batchDeleting, setBatchDeleting] = useState(false);
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [currentPage, statusFilter]);
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch('/api/orders?limit=50');
+      const offset = (currentPage - 1) * itemsPerPage;
+      let url = `/api/orders?limit=${itemsPerPage}&offset=${offset}`;
+      
+      if (statusFilter) {
+        url += `&status=${statusFilter}`;
+      }
+      
+      const res = await fetch(url);
       const data = await res.json();
       setOrders(data.orders || []);
+      setTotalOrders(data.pagination?.total || 0);
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
@@ -30,12 +43,11 @@ export default function AdminOrders() {
   };
 
   const filteredOrders = orders.filter((order: any) => {
-    const matchesSearch = 
+    const matchesSearch =
       order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerPhone?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !statusFilter || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
   const getStatusColor = (status: string) => {
@@ -85,7 +97,7 @@ export default function AdminOrders() {
 
   const handleStatusUpdate = async (newStatus: string) => {
     if (!selectedOrder) return;
-    
+
     setUpdatingStatus(true);
     try {
       const res = await fetch(`/api/orders?id=${selectedOrder._id}`, {
@@ -105,6 +117,55 @@ export default function AdminOrders() {
       console.error('Error updating order status:', error);
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  const totalPages = Math.ceil(totalOrders / itemsPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    setSelectedOrders(new Set()); // Clear selection on page change
+  };
+
+  const handleSelectOrder = (orderId: string) => {
+    setSelectedOrders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedOrders.size === filteredOrders.length) {
+      setSelectedOrders(new Set());
+    } else {
+      setSelectedOrders(new Set(filteredOrders.map((order: any) => order._id)));
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedOrders.size === 0) return;
+
+    if (!confirm(`Are you sure you want to delete ${selectedOrders.size} orders?`)) return;
+
+    setBatchDeleting(true);
+    try {
+      const deletePromises = Array.from(selectedOrders).map(orderId =>
+        fetch(`/api/orders?id=${orderId}`, { method: 'DELETE' })
+      );
+
+      await Promise.all(deletePromises);
+      setSelectedOrders(new Set());
+      fetchOrders();
+    } catch (error) {
+      console.error('Error deleting orders:', error);
+      alert('Failed to delete some orders');
+    } finally {
+      setBatchDeleting(false);
     }
   };
 
@@ -472,6 +533,16 @@ export default function AdminOrders() {
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
+        {selectedOrders.size > 0 && (
+          <button
+            onClick={handleBatchDelete}
+            disabled={batchDeleting}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Trash2 size={16} />
+            {batchDeleting ? 'Deleting...' : `Delete Selected (${selectedOrders.size})`}
+          </button>
+        )}
       </div>
 
       {/* Orders Table */}
@@ -480,6 +551,14 @@ export default function AdminOrders() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedOrders.size === filteredOrders.length && filteredOrders.length > 0}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                  />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Order ID
                 </th>
@@ -506,6 +585,14 @@ export default function AdminOrders() {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredOrders.map((order: any) => (
                 <tr key={order._id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedOrders.has(order._id)}
+                      onChange={() => handleSelectOrder(order._id)}
+                      className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                    />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{order.orderNumber || order._id}</div>
                   </td>
@@ -548,6 +635,44 @@ export default function AdminOrders() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalOrders)} of {totalOrders} orders
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => handlePageChange(page)}
+                className={`px-4 py-2 border rounded-lg ${
+                  currentPage === page
+                    ? 'bg-green-600 text-white border-green-600'
+                    : 'border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Order Details Modal */}
       {isModalOpen && selectedOrder && (

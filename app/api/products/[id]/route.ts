@@ -24,6 +24,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'At least one image is required' }, { status: 400 });
     }
 
+    // Validate galleryImages array if provided
+    if (updateData.galleryImages !== undefined) {
+      if (!Array.isArray(updateData.galleryImages)) {
+        return NextResponse.json({ error: 'galleryImages must be an array' }, { status: 400 });
+      }
+      if (updateData.galleryImages.length > 2) {
+        return NextResponse.json({ error: 'Maximum 2 gallery images allowed' }, { status: 400 });
+      }
+    }
+
     // Validate price based on hasVariants if provided
     if (updateData.hasVariants !== undefined) {
       if (updateData.hasVariants) {

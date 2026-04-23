@@ -96,7 +96,13 @@ export default function EditProduct() {
         setImagePreviews(uploadedUrls);
       } else {
         // For gallery, append new URLs to existing ones
-        setFormData((prev) => ({ ...prev, galleryImages: [...prev.galleryImages, ...uploadedUrls] }));
+        console.log('Current galleryImages before upload:', formData.galleryImages);
+        console.log('New uploaded URLs:', uploadedUrls);
+        setFormData((prev) => {
+          const newGalleryImages = [...prev.galleryImages, ...uploadedUrls];
+          console.log('New galleryImages after upload:', newGalleryImages);
+          return { ...prev, galleryImages: newGalleryImages };
+        });
         setGalleryImagePreviews(prev => [...prev, ...uploadedUrls]);
       }
 
@@ -228,6 +234,7 @@ export default function EditProduct() {
     console.log('Has variants:', formData.hasVariants);
     console.log('Variants:', formData.variants);
     console.log('Images in form data:', formData.images);
+    console.log('Gallery images in form data:', formData.galleryImages);
 
     try {
       // Calculate price from variants if hasVariants is true

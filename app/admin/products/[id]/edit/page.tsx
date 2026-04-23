@@ -61,33 +61,36 @@ export default function EditProduct() {
   const handleImageUpload = async (files: File[], type: 'main' | 'gallery') => {
     setUploading(true);
     try {
-      const formData = new FormData();
-      files.forEach((file) => formData.append('files', file));
+      const uploadedUrls: string[] = [];
 
-      console.log('Uploading files:', files);
+      // Upload each file individually
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
 
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
 
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Failed to upload images');
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Failed to upload image');
+        }
+
+        const data = await res.json();
+        if (data.urls && data.urls.length > 0) {
+          uploadedUrls.push(...data.urls);
+        }
       }
 
-      const data = await res.json();
-      console.log('Upload response:', data);
-      
       if (type === 'main') {
-        setFormData((prev) => ({ ...prev, images: data.urls }));
-        setImagePreviews(data.urls);
+        setFormData((prev) => ({ ...prev, images: uploadedUrls }));
+        setImagePreviews(uploadedUrls);
       } else {
-        setFormData((prev) => ({ ...prev, galleryImages: data.urls }));
-        setGalleryImagePreviews(data.urls);
+        setFormData((prev) => ({ ...prev, galleryImages: uploadedUrls }));
+        setGalleryImagePreviews(uploadedUrls);
       }
-      
-      console.log('Form data after upload:', data.urls);
     } catch (error) {
       console.error('Error uploading images:', error);
       alert('Failed to upload images. Please try again.');
@@ -98,7 +101,7 @@ export default function EditProduct() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'main' | 'gallery') => {
     const files = Array.from(e.target.files || []);
-    const maxFiles = type === 'main' ? 3 : 2;
+    const maxFiles = type === 'main' ? 1 : 2;
     
     if (files.length > maxFiles) {
       alert(`Please select up to ${maxFiles} images only.`);
@@ -202,19 +205,47 @@ export default function EditProduct() {
       return;
     }
 
+    // Validate price when not using variants
+    if (!formData.hasVariants && (!formData.price || parseFloat(formData.price) <= 0)) {
+      alert('Please enter a valid price greater than 0.');
+      return;
+    }
+
     setSaving(true);
 
     console.log('Submitting form data:', formData);
+    console.log('Has variants:', formData.hasVariants);
+    console.log('Variants:', formData.variants);
     console.log('Images in form data:', formData.images);
 
     try {
+      // Calculate price from variants if hasVariants is true
+      let finalPrice = formData.hasVariants ? 0 : parseFloat(formData.price);
+      let finalOldPrice = formData.hasVariants ? undefined : (formData.oldPrice ? parseFloat(formData.oldPrice) : undefined);
+
+      if (formData.hasVariants && formData.variants.length > 0) {
+        // Set main price to minimum variant price
+        const variantPrices = formData.variants.map(v => parseFloat(v.price)).filter(p => p > 0);
+        if (variantPrices.length > 0) {
+          finalPrice = Math.min(...variantPrices);
+        }
+
+        // Set main old price to minimum variant old price if any variant has old price
+        const variantOldPrices = formData.variants
+          .map(v => v.oldPrice ? parseFloat(v.oldPrice) : null)
+          .filter((p): p is number => p !== null && p > 0);
+        if (variantOldPrices.length > 0) {
+          finalOldPrice = Math.min(...variantOldPrices);
+        }
+      }
+
       const res = await fetch(`/api/products/${params.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          price: formData.hasVariants ? 0 : parseFloat(formData.price),
-          oldPrice: formData.hasVariants ? undefined : (formData.oldPrice ? parseFloat(formData.oldPrice) : undefined),
+          price: finalPrice,
+          oldPrice: finalOldPrice,
           variants: formData.hasVariants ? formData.variants.map(v => ({
             ...v,
             price: parseFloat(v.price),
@@ -311,16 +342,19 @@ export default function EditProduct() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Price (৳) *
+                Price (৳) {!formData.hasVariants && '*'}
               </label>
               <input
                 type="number"
-                required
+                required={!formData.hasVariants}
                 step="0.01"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
+              {formData.hasVariants && (
+                <p className="text-xs text-gray-500 mt-1">This price is ignored when variants are enabled</p>
+              )}
             </div>
 
             <div>
@@ -334,6 +368,9 @@ export default function EditProduct() {
                 onChange={(e) => setFormData({ ...formData, oldPrice: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
+              {formData.hasVariants && (
+                <p className="text-xs text-gray-500 mt-1">This price is ignored when variants are enabled</p>
+              )}
             </div>
 
             <div>
@@ -493,14 +530,12 @@ export default function EditProduct() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Product Images (up to 3) *
+                Product Image *
               </label>
               <div className="space-y-3">
                 <input
                   type="file"
                   accept="image/jpeg,image/jpg,image/png,image/webp"
-                  multiple
-                  max={3}
                   onChange={(e) => handleFileChange(e, 'main')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
                 />

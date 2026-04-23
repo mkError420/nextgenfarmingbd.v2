@@ -24,6 +24,26 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'At least one image is required' }, { status: 400 });
     }
 
+    // Validate price based on hasVariants if provided
+    if (updateData.hasVariants !== undefined) {
+      if (updateData.hasVariants) {
+        // When has variants, validate variants array and their prices
+        if (!Array.isArray(updateData.variants) || updateData.variants.length === 0) {
+          return NextResponse.json({ error: 'At least one variant is required when hasVariants is true' }, { status: 400 });
+        }
+        for (const variant of updateData.variants) {
+          if (!variant.price || variant.price <= 0) {
+            return NextResponse.json({ error: 'All variants must have a valid price' }, { status: 400 });
+          }
+        }
+      } else {
+        // When no variants, validate main price
+        if (updateData.price !== undefined && (!updateData.price || updateData.price <= 0)) {
+          return NextResponse.json({ error: 'Price is required and must be greater than 0' }, { status: 400 });
+        }
+      }
+    }
+
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
       { ...updateData, updatedAt: new Date() },

@@ -36,7 +36,6 @@ export default function SingleProductPage() {
   const router = useRouter();
   const id = params?.id as string;
   const [baseProduct, setBaseProduct] = useState<any>(null);
-  const [categoryVariants, setCategoryVariants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,15 +47,6 @@ export default function SingleProductPage() {
       const res = await fetch(`/api/products?id=${id}`);
       const data = await res.json();
       setBaseProduct(data.product || data);
-      
-      // Fetch category variants
-      if (data.product?.category) {
-        const categoryRes = await fetch(`/api/categories?name_en=${encodeURIComponent(data.product.category)}`);
-        const categoryData = await categoryRes.json();
-        if (categoryData.category?.variants && categoryData.category.variants.length > 0) {
-          setCategoryVariants(categoryData.category.variants);
-        }
-      }
     } catch (error) {
       console.error('Error fetching product:', error);
     } finally {
@@ -67,7 +57,7 @@ export default function SingleProductPage() {
   // Derive full product details from base product data
   const product = useMemo(() => {
     if (!baseProduct) return null;
-    
+
     return {
       ...baseProduct,
       id: baseProduct._id || baseProduct.id,
@@ -79,10 +69,10 @@ export default function SingleProductPage() {
         'স্বাস্থ্যসম্মত উপায়ে প্যাকেটজাত',
         'পারফেক্ট স্বাদের নিশ্চয়তা'
       ],
-      variants: categoryVariants,
-      images: (baseProduct.images && baseProduct.images.length > 0) 
-        ? baseProduct.images 
-        : (baseProduct.image 
+      variants: baseProduct.variants || [],
+      images: (baseProduct.images && baseProduct.images.length > 0)
+        ? baseProduct.images
+        : (baseProduct.image
             ? [
                 baseProduct.image,
                 `https://picsum.photos/seed/${baseProduct._id || baseProduct.id}-2/800/800`,
@@ -96,7 +86,7 @@ export default function SingleProductPage() {
       details: baseProduct.details || '',
       deliveryInfo: 'ঢাকার ভেতরে অথবা ১০০০০ টাকার উপরে কেনাকাটায় ফ্রি ডেলিভারি! ঢাকার ভেতরে ২৪-৪৮ ঘণ্টা এবং ঢাকার বাইরে ৩-৫ কার্যদিবসের মধ্যে কুরিয়ারের মাধ্যমে আমরা পণ্য প্রতিটি জেলায় পৌঁছে দিয়ে থাকি।'
     };
-  }, [baseProduct, categoryVariants]);
+  }, [baseProduct]);
 
   const [mainImage, setMainImage] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -116,7 +106,9 @@ export default function SingleProductPage() {
 
       // Initialize selected variant if product has variants
       if (product.hasVariants && product.variants && product.variants.length > 0) {
-        setSelectedVariant(product.variants[0]);
+        // Select first in-stock variant
+        const firstInStockVariant = product.variants.find((v: any) => v.inStock);
+        setSelectedVariant(firstInStockVariant || product.variants[0]);
       }
     }
   }, [product]);
@@ -152,14 +144,45 @@ export default function SingleProductPage() {
   const handleAddToCart = () => {
     if (!product) return;
 
+    // Check if variant is selected and in stock
+    if (product.hasVariants) {
+      if (!selectedVariant) {
+        toast.error('অনুগ্রহ করে একটি পরিমাণ নির্বাচন করুন', {
+          style: {
+            borderRadius: '1.5rem',
+            background: '#dc2626',
+            color: '#fff',
+            fontWeight: 'bold',
+            fontSize: '14px',
+            padding: '12px 24px'
+          },
+        });
+        return;
+      }
+      if (!selectedVariant.inStock) {
+        toast.error('নির্বাচিত পরিমাণটি স্টক আউট', {
+          style: {
+            borderRadius: '1.5rem',
+            background: '#dc2626',
+            color: '#fff',
+            fontWeight: 'bold',
+            fontSize: '14px',
+            padding: '12px 24px'
+          },
+        });
+        return;
+      }
+    }
+
     const productImage = product.images?.[0] || product.image || '';
 
     // Use variant price if selected, otherwise use base price
     const price = selectedVariant ? selectedVariant.price : product.price;
     const variantName = selectedVariant ? selectedVariant.name : '';
+    const variantId = selectedVariant ? `${product.id}-${selectedVariant.name}` : product.id;
 
     addToCart({
-      id: product.id,
+      id: variantId,
       name: product.name,
       price: price,
       quantity: quantity,
@@ -187,14 +210,45 @@ export default function SingleProductPage() {
   const handleBuyNow = () => {
     if (!product) return;
 
+    // Check if variant is selected and in stock
+    if (product.hasVariants) {
+      if (!selectedVariant) {
+        toast.error('অনুগ্রহ করে একটি পরিমাণ নির্বাচন করুন', {
+          style: {
+            borderRadius: '1.5rem',
+            background: '#dc2626',
+            color: '#fff',
+            fontWeight: 'bold',
+            fontSize: '14px',
+            padding: '12px 24px'
+          },
+        });
+        return;
+      }
+      if (!selectedVariant.inStock) {
+        toast.error('নির্বাচিত পরিমাণটি স্টক আউট', {
+          style: {
+            borderRadius: '1.5rem',
+            background: '#dc2626',
+            color: '#fff',
+            fontWeight: 'bold',
+            fontSize: '14px',
+            padding: '12px 24px'
+          },
+        });
+        return;
+      }
+    }
+
     const productImage = product.images?.[0] || product.image || '';
 
     // Use variant price if selected, otherwise use base price
     const price = selectedVariant ? selectedVariant.price : product.price;
     const variantName = selectedVariant ? selectedVariant.name : '';
+    const variantId = selectedVariant ? `${product.id}-${selectedVariant.name}` : product.id;
 
     addToCart({
-      id: product.id,
+      id: variantId,
       name: product.name,
       price: price,
       quantity: quantity,
@@ -253,16 +307,21 @@ export default function SingleProductPage() {
                  className="relative aspect-square rounded-[3rem] overflow-hidden bg-white border border-emerald-50 shadow-xl cursor-zoom-in"
                >
                   {mainImage && (
-                    <Image 
-                      src={mainImage} 
-                      alt={product.name} 
-                      fill 
+                    <Image
+                      src={mainImage}
+                      alt={product.name}
+                      fill
                       className={`object-cover transition-transform duration-200 ease-out ${isZoomed ? 'scale-[2.5]' : 'scale-100'}`}
                       style={{ transformOrigin: zoomOrigin }}
                       referrerPolicy="no-referrer"
                     />
                   )}
-                  {product.oldPrice && (
+                  {selectedVariant && selectedVariant.oldPrice && selectedVariant.oldPrice > selectedVariant.price && (
+                    <div className="absolute top-6 left-6 bg-brand-red text-white text-xs font-black px-4 py-1.5 rounded-full shadow-lg">
+                      {Math.round(((selectedVariant.oldPrice - selectedVariant.price) / selectedVariant.oldPrice) * 100)}% OFF
+                    </div>
+                  )}
+                  {!selectedVariant && product.oldPrice && product.oldPrice > product.price && (
                     <div className="absolute top-6 left-6 bg-brand-red text-white text-xs font-black px-4 py-1.5 rounded-full shadow-lg">
                       {Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)}% OFF
                     </div>
@@ -293,7 +352,7 @@ export default function SingleProductPage() {
                  <span className="text-slate-400 text-xs font-bold italic">{product.reviews} কাস্টমার রিভিউ</span>
                  <span className="w-1.5 h-1.5 bg-slate-200 rounded-full" />
                  <span className="text-emerald-600 text-xs font-black uppercase tracking-widest flex items-center gap-1">
-                    <CheckCircle2 size={14} /> {product.status}
+                    <CheckCircle2 size={14} /> {selectedVariant ? (selectedVariant.inStock ? 'In Stock' : 'Out of Stock') : product.status}
                  </span>
                </div>
                
@@ -308,7 +367,7 @@ export default function SingleProductPage() {
                   {selectedVariant && selectedVariant.oldPrice && selectedVariant.oldPrice > selectedVariant.price && (
                     <span className="text-xl text-slate-300 line-through font-bold mb-1">৳{selectedVariant.oldPrice * quantity}</span>
                   )}
-                  {!selectedVariant && product.oldPrice && (
+                  {!selectedVariant && product.oldPrice && product.oldPrice > product.price && (
                     <span className="text-xl text-slate-300 line-through font-bold mb-1">৳{product.oldPrice * quantity}</span>
                   )}
                </div>
@@ -324,17 +383,19 @@ export default function SingleProductPage() {
                  <div className="space-y-3">
                   <span className="text-xs font-black text-slate-400 uppercase tracking-widest">পরিমাণ নির্বাচন করুন (Variant)</span>
                   <div className="flex flex-wrap gap-3">
-                    {product.variants.map((variant: any) => (
+                    {product.variants.map((variant: any, index: number) => (
                       <button
-                        key={variant.name}
+                        key={index}
                         onClick={() => setSelectedVariant(variant)}
                         disabled={!variant.inStock}
                         className={`px-6 py-2.5 rounded-2xl text-sm font-black transition-all border-2 ${selectedVariant?.name === variant.name ? 'bg-brand-green-dark border-brand-green-dark text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500 hover:border-brand-green'} ${!variant.inStock ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         {variant.name}
+                        {variant.name_en && <span className="text-xs opacity-70 ml-1">({variant.name_en})</span>}
                         {variant.oldPrice && variant.oldPrice > variant.price && (
                           <span className="ml-1 text-xs text-red-500 line-through">৳{variant.oldPrice}</span>
                         )}
+                        {!variant.inStock && <span className="ml-1 text-xs text-red-500">(স্টক আউট)</span>}
                       </button>
                     ))}
                   </div>

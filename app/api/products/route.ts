@@ -73,10 +73,28 @@ export async function POST(request: NextRequest) {
     const productData = await request.json();
     
     // Validate required fields
-    const requiredFields = ['name', 'name_en', 'price', 'category', 'images'];
+    const requiredFields = ['name', 'name_en', 'category', 'images'];
     for (const field of requiredFields) {
       if (!productData[field]) {
         return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 });
+      }
+    }
+    
+    // Validate price based on hasVariants
+    if (productData.hasVariants) {
+      // When has variants, validate variants array and their prices
+      if (!Array.isArray(productData.variants) || productData.variants.length === 0) {
+        return NextResponse.json({ error: 'At least one variant is required when hasVariants is true' }, { status: 400 });
+      }
+      for (const variant of productData.variants) {
+        if (!variant.price || variant.price <= 0) {
+          return NextResponse.json({ error: 'All variants must have a valid price' }, { status: 400 });
+        }
+      }
+    } else {
+      // When no variants, validate main price
+      if (!productData.price || productData.price <= 0) {
+        return NextResponse.json({ error: 'Price is required and must be greater than 0' }, { status: 400 });
       }
     }
     

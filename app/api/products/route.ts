@@ -15,9 +15,6 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    console.log('API - Category filter:', category);
-    console.log('API - Search term:', search);
-
     if (id) {
       // Get single product by ID
       const product = await Product.findById(id);
@@ -34,7 +31,6 @@ export async function GET(request: NextRequest) {
     
     if (category) {
       query.category = category;
-      console.log('API - Query with category filter:', query);
     }
     
     if (search) {
@@ -54,13 +50,6 @@ export async function GET(request: NextRequest) {
     const products = await queryBuilder.skip(offset);
 
     const total = await Product.countDocuments(query);
-
-    console.log('API - Total products found:', total);
-    console.log('API - Products returned:', products.length);
-    
-    // Log unique categories from products
-    const uniqueCategories = await Product.distinct('category');
-    console.log('API - All unique categories in products:', uniqueCategories);
 
     return NextResponse.json({ 
       products,
@@ -83,8 +72,6 @@ export async function POST(request: NextRequest) {
     
     const productData = await request.json();
     
-    console.log('Product data received:', productData);
-    
     // Validate required fields
     const requiredFields = ['name', 'name_en', 'price', 'category', 'images'];
     for (const field of requiredFields) {
@@ -101,16 +88,8 @@ export async function POST(request: NextRequest) {
     const product = new Product(productData);
     await product.save();
     
-    console.log('Product saved successfully:', product);
-    
     return NextResponse.json(product, { status: 201 });
   } catch (error: any) {
-    console.error('Error creating product:', error);
-    console.error('Error details:', error.message);
-    console.error('Error stack:', error.stack);
-    if (error.errors) {
-      console.error('Validation errors:', error.errors);
-    }
     return NextResponse.json({ error: error.message || 'Failed to create product' }, { status: 500 });
   }
 }

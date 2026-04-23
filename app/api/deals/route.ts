@@ -32,7 +32,6 @@ export async function GET(request: NextRequest) {
       offset
     });
   } catch (error) {
-    console.error('Error fetching deals:', error);
     return NextResponse.json({ error: 'Failed to fetch deals' }, { status: 500 });
   }
 }
@@ -66,7 +65,6 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json(deal, { status: 201 });
   } catch (error: any) {
-    console.error('Error creating deal:', error);
     if (error.code === 11000) {
       return NextResponse.json({ error: 'Deal code already exists' }, { status: 400 });
     }

@@ -200,9 +200,9 @@ export default function Header() {
           <Link href="/login" className="hidden sm:inline-block bg-brand-green-dark text-white px-4 md:px-6 py-2 rounded-full text-xs md:text-sm font-semibold hover:bg-brand-green-deep transition-colors shadow-sm whitespace-nowrap">
             লগইন
           </Link>
-          <button className="sm:hidden text-emerald-800">
+          <Link href="/login" className="sm:hidden text-emerald-800">
             <User size={20} />
-          </button>
+          </Link>
         </div>
       </div>
 

@@ -369,6 +369,7 @@ export default function CheckoutPage() {
               <thead>
                 <tr>
                   <th>Product</th>
+                  <th>Variant</th>
                   <th>Price</th>
                   <th>Quantity</th>
                   <th>Total</th>
@@ -378,6 +379,7 @@ export default function CheckoutPage() {
                 ${createdOrder.items?.map((item: any) => `
                   <tr>
                     <td>${item.name}</td>
+                    <td>${item.variant || '-'}</td>
                     <td>৳${item.price}</td>
                     <td>${item.quantity}</td>
                     <td>৳${item.price * item.quantity}</td>
@@ -745,6 +747,9 @@ export default function CheckoutPage() {
                          </div>
                          <div className="flex-1 min-w-0">
                             <h4 className="font-black text-white italic truncate">{item.name}</h4>
+                            {item.variant && (
+                              <p className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">{item.variant}</p>
+                            )}
                             <p className="text-[10px] font-bold text-emerald-100/40 uppercase tracking-widest">{item.quantity} × ৳{item.price}</p>
                          </div>
                          <div className="font-black text-emerald-400 italic">৳{item.price * item.quantity}</div>

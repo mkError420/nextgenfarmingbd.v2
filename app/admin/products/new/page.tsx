@@ -25,6 +25,14 @@ export default function NewProduct() {
     description_en: '',
     details: '',
     inStock: true,
+    hasVariants: false,
+    variants: [] as Array<{
+      name: string;
+      name_en: string;
+      price: string;
+      oldPrice: string;
+      inStock: boolean;
+    }>,
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -136,14 +144,19 @@ export default function NewProduct() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (uploading) {
       alert('Please wait for images to finish uploading.');
       return;
     }
-    
+
     if (formData.images.length === 0) {
       alert('Please upload at least one image for the product.');
+      return;
+    }
+
+    if (formData.hasVariants && formData.variants.length === 0) {
+      alert('Please add at least one variant.');
       return;
     }
 
@@ -157,8 +170,13 @@ export default function NewProduct() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          price: parseFloat(formData.price),
-          oldPrice: formData.oldPrice ? parseFloat(formData.oldPrice) : undefined,
+          price: formData.hasVariants ? 0 : parseFloat(formData.price),
+          oldPrice: formData.hasVariants ? undefined : (formData.oldPrice ? parseFloat(formData.oldPrice) : undefined),
+          variants: formData.hasVariants ? formData.variants.map(v => ({
+            ...v,
+            price: parseFloat(v.price),
+            oldPrice: v.oldPrice ? parseFloat(v.oldPrice) : undefined
+          })) : [],
         }),
       });
 
@@ -174,6 +192,29 @@ export default function NewProduct() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const addVariant = () => {
+    setFormData({
+      ...formData,
+      variants: [
+        ...formData.variants,
+        { name: '', name_en: '', price: '', oldPrice: '', inStock: true }
+      ]
+    });
+  };
+
+  const removeVariant = (index: number) => {
+    setFormData({
+      ...formData,
+      variants: formData.variants.filter((_, i) => i !== index)
+    });
+  };
+
+  const updateVariant = (index: number, field: string, value: any) => {
+    const updatedVariants = [...formData.variants];
+    updatedVariants[index] = { ...updatedVariants[index], [field]: value };
+    setFormData({ ...formData, variants: updatedVariants });
   };
 
   return (
@@ -285,7 +326,123 @@ export default function NewProduct() {
                 ))}
               </select>
             </div>
+          </div>
 
+          <div className="border-t pt-6 bg-green-50 rounded-lg p-4">
+            <div className="flex items-center mb-4">
+              <input
+                type="checkbox"
+                id="hasVariants"
+                checked={formData.hasVariants}
+                onChange={(e) => setFormData({ ...formData, hasVariants: e.target.checked })}
+                className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+              />
+              <label htmlFor="hasVariants" className="ml-2 text-sm font-medium text-gray-700">
+                পরিমাণ নির্বাচন করুন (Has Variants)
+              </label>
+            </div>
+
+            {formData.hasVariants && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-medium text-gray-700">Product Variants</h3>
+                  <button
+                    type="button"
+                    onClick={addVariant}
+                    className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                  >
+                    + Add Variant
+                  </button>
+                </div>
+
+                {formData.variants.map((variant, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-3 bg-white">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">Variant {index + 1}</span>
+                      {formData.variants.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeVariant(index)}
+                          className="text-red-600 hover:text-red-700 text-sm"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Variant Name (Bangla) *
+                        </label>
+                        <input
+                          type="text"
+                          value={variant.name}
+                          onChange={(e) => updateVariant(index, 'name', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          placeholder="e.g., ১ কেজি"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Variant Name (English)
+                        </label>
+                        <input
+                          type="text"
+                          value={variant.name_en}
+                          onChange={(e) => updateVariant(index, 'name_en', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          placeholder="e.g., 1kg"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Price (৳) *
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={variant.price}
+                          onChange={(e) => updateVariant(index, 'price', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Old Price (৳)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={variant.oldPrice}
+                          onChange={(e) => updateVariant(index, 'oldPrice', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`variant-inStock-${index}`}
+                        checked={variant.inStock}
+                        onChange={(e) => updateVariant(index, 'inStock', e.target.checked)}
+                        className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                      />
+                      <label htmlFor={`variant-inStock-${index}`} className="ml-2 text-sm text-gray-700">
+                        In Stock
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Product Images (up to 3) *

@@ -100,7 +100,7 @@ export default function SingleProductPage() {
 
   const [mainImage, setMainImage] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('description');
   const [showSuccess, setShowSuccess] = useState(false);
   const [zoomOrigin, setZoomOrigin] = useState('center');
@@ -110,18 +110,14 @@ export default function SingleProductPage() {
   const { addToCart, setIsDrawerOpen } = useCart();
 
   useEffect(() => {
-    if (product && product.variants) {
+    if (product) {
       const mainIndex = product.mainImageIndex ?? 0;
       setMainImage(product.images[Math.min(mainIndex, product.images.length - 1)] || '');
-      
-      // Initialize selected variants with first option of each variant type
-      const initialVariants: Record<string, string> = {};
-      product.variants.forEach((variant: any) => {
-        if (variant.options && variant.options.length > 0) {
-          initialVariants[variant.name] = variant.options[0];
-        }
-      });
-      setSelectedVariants(initialVariants);
+
+      // Initialize selected variant if product has variants
+      if (product.hasVariants && product.variants && product.variants.length > 0) {
+        setSelectedVariant(product.variants[0]);
+      }
     }
   }, [product]);
 
@@ -155,21 +151,20 @@ export default function SingleProductPage() {
 
   const handleAddToCart = () => {
     if (!product) return;
-    
+
     const productImage = product.images?.[0] || product.image || '';
-    
-    // Format selected variants as string
-    const variantString = Object.entries(selectedVariants)
-      .map(([type, option]) => `${type}: ${option}`)
-      .join(', ');
-    
+
+    // Use variant price if selected, otherwise use base price
+    const price = selectedVariant ? selectedVariant.price : product.price;
+    const variantName = selectedVariant ? selectedVariant.name : '';
+
     addToCart({
       id: product.id,
       name: product.name,
-      price: product.price,
+      price: price,
       quantity: quantity,
       image: productImage,
-      variant: variantString
+      variant: variantName
     });
 
     setIsDrawerOpen(true);
@@ -191,21 +186,20 @@ export default function SingleProductPage() {
 
   const handleBuyNow = () => {
     if (!product) return;
-    
+
     const productImage = product.images?.[0] || product.image || '';
-    
-    // Format selected variants as string
-    const variantString = Object.entries(selectedVariants)
-      .map(([type, option]) => `${type}: ${option}`)
-      .join(', ');
-    
+
+    // Use variant price if selected, otherwise use base price
+    const price = selectedVariant ? selectedVariant.price : product.price;
+    const variantName = selectedVariant ? selectedVariant.name : '';
+
     addToCart({
       id: product.id,
       name: product.name,
-      price: product.price,
+      price: price,
       quantity: quantity,
       image: productImage,
-      variant: variantString
+      variant: variantName
     });
 
     router.push('/checkout');
@@ -308,8 +302,13 @@ export default function SingleProductPage() {
                </h1>
 
                <div className="flex items-end gap-4">
-                  <span className="text-4xl md:text-5xl font-black text-brand-green tracking-tighter italic">৳{product.price * quantity}</span>
-                  {product.oldPrice && (
+                  <span className="text-4xl md:text-5xl font-black text-brand-green tracking-tighter italic">
+                    ৳{(selectedVariant ? selectedVariant.price : product.price) * quantity}
+                  </span>
+                  {selectedVariant && selectedVariant.oldPrice && selectedVariant.oldPrice > selectedVariant.price && (
+                    <span className="text-xl text-slate-300 line-through font-bold mb-1">৳{selectedVariant.oldPrice * quantity}</span>
+                  )}
+                  {!selectedVariant && product.oldPrice && (
                     <span className="text-xl text-slate-300 line-through font-bold mb-1">৳{product.oldPrice * quantity}</span>
                   )}
                </div>
@@ -321,33 +320,21 @@ export default function SingleProductPage() {
 
             {/* Selection Options */}
             <div className="space-y-6 pt-4 border-t border-slate-100">
-               {product.variants && product.variants.length > 0 && product.variants.map((variant: any) => (
-                 <div key={variant.name} className="space-y-3">
-                  <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{variant.name}</span>
-                  <div className="flex flex-wrap gap-3">
-                    {variant.options.map((option: string) => (
-                      <button 
-                        key={option}
-                        onClick={() => setSelectedVariants({ ...selectedVariants, [variant.name]: option })}
-                        className={`px-6 py-2.5 rounded-2xl text-sm font-black transition-all border-2 ${selectedVariants[variant.name] === option ? 'bg-brand-green-dark border-brand-green-dark text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500 hover:border-brand-green'}`}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-               </div>
-               ))}
-               {(!product.variants || product.variants.length === 0) && (
+               {product.hasVariants && product.variants && product.variants.length > 0 && (
                  <div className="space-y-3">
                   <span className="text-xs font-black text-slate-400 uppercase tracking-widest">পরিমাণ নির্বাচন করুন (Variant)</span>
                   <div className="flex flex-wrap gap-3">
-                    {[baseProduct.weight || 'Regular', '৫০০ গ্রাম', '১ কেজি'].map((v: string) => (
-                      <button 
-                        key={v}
-                        onClick={() => setSelectedVariants({ ...selectedVariants, 'Weight': v })}
-                        className={`px-6 py-2.5 rounded-2xl text-sm font-black transition-all border-2 ${selectedVariants['Weight'] === v ? 'bg-brand-green-dark border-brand-green-dark text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500 hover:border-brand-green'}`}
+                    {product.variants.map((variant: any) => (
+                      <button
+                        key={variant.name}
+                        onClick={() => setSelectedVariant(variant)}
+                        disabled={!variant.inStock}
+                        className={`px-6 py-2.5 rounded-2xl text-sm font-black transition-all border-2 ${selectedVariant?.name === variant.name ? 'bg-brand-green-dark border-brand-green-dark text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500 hover:border-brand-green'} ${!variant.inStock ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        {v}
+                        {variant.name}
+                        {variant.oldPrice && variant.oldPrice > variant.price && (
+                          <span className="ml-1 text-xs text-red-500 line-through">৳{variant.oldPrice}</span>
+                        )}
                       </button>
                     ))}
                   </div>

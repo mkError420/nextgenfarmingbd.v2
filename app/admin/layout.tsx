@@ -59,6 +59,10 @@ export default function AdminLayout({
   const fetchUnreadCount = async () => {
     try {
       const res = await fetch('/api/messages/unread-count');
+      if (!res.ok) {
+        console.error('Failed to fetch unread count:', res.status);
+        return;
+      }
       const data = await res.json();
       setUnreadCount(data.count || 0);
     } catch (error) {

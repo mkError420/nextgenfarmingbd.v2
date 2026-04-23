@@ -345,7 +345,7 @@ export default function AdminOrders() {
               <tbody>
                 ${selectedOrder.items?.map((item: any) => `
                   <tr>
-                    <td>${item.name}</td>
+                    <td>${item.name}${item.variant ? `<br><small style="color: #666; font-size: 11px;">${item.variant}</small>` : ''}</td>
                     <td>৳${item.price}</td>
                     <td>${item.quantity}</td>
                     <td>৳${item.price * item.quantity}</td>
@@ -866,6 +866,9 @@ export default function AdminOrders() {
                               )}
                               <div>
                                 <p className="font-medium text-gray-900">{item.name}</p>
+                                {item.variant && (
+                                  <p className="text-xs font-semibold text-green-600 uppercase tracking-wider">{item.variant}</p>
+                                )}
                                 <p className="text-sm text-gray-500">{item.name_en}</p>
                               </div>
                             </div>

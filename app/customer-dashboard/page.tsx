@@ -309,6 +309,9 @@ export default function CustomerDashboard() {
                               </div>
                             )}
                             <span className="text-sm font-medium text-gray-700">{item.name}</span>
+                            {item.variant && (
+                              <span className="text-xs font-semibold text-green-600 uppercase tracking-wider">{item.variant}</span>
+                            )}
                             <span className="text-sm text-gray-500">×{item.quantity}</span>
                           </div>
                         ))}
@@ -405,7 +408,12 @@ export default function CustomerDashboard() {
                       <tbody>
                         {selectedOrderForPrint.items?.map((item: any, index: number) => (
                           <tr key={index} className="border-b">
-                            <td className="py-3 text-sm">{item.name}</td>
+                            <td className="py-3 text-sm">
+                              {item.name}
+                              {item.variant && (
+                                <span className="block text-xs text-gray-500 font-semibold uppercase tracking-wider mt-1">{item.variant}</span>
+                              )}
+                            </td>
                             <td className="py-3 text-sm text-center">{item.quantity}</td>
                             <td className="py-3 text-sm text-right">৳{item.price}</td>
                             <td className="py-3 text-sm text-right">৳{item.price * item.quantity}</td>

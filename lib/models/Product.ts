@@ -17,6 +17,14 @@ export interface IProduct extends Document {
   description?: string;
   details?: string;
   tags?: string[];
+  variants?: {
+    name: string;
+    name_en?: string;
+    price: number;
+    oldPrice?: number;
+    inStock: boolean;
+  }[];
+  hasVariants: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -101,6 +109,32 @@ const ProductSchema: Schema = new Schema({
   tags: [{
     type: String,
   }],
+  variants: [{
+    name: {
+      type: String,
+      required: true
+    },
+    name_en: {
+      type: String
+    },
+    price: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    oldPrice: {
+      type: Number,
+      min: 0
+    },
+    inStock: {
+      type: Boolean,
+      default: true
+    }
+  }],
+  hasVariants: {
+    type: Boolean,
+    default: false
+  }
 }, {
   timestamps: true,
 });
